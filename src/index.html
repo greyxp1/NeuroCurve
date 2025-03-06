@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeuroCurve</title>
+    <script type="module" src="/main.js" defer></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  </head>
+
+  <body>
+    <div data-tauri-drag-region class="container">
+      <div class="settings-panel">
+        <div class="window-controls">
+          <div class="titlebar-button" id="titlebar-minimize"></div>
+          <div class="titlebar-button" id="titlebar-maximize"></div>
+          <div class="titlebar-button" id="titlebar-close"></div>
+        </div>
+
+        <div class="panel-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="common-settings">
+          <div class="setting-row">
+            <div class="setting-label" data-tooltip="Mouse DPI (Dots Per Inch)">DPI</div>
+            <input type="range" id="dpi" class="setting-slider" min="400" max="6400" step="50" />
+            <input type="number" id="dpi-value" class="setting-value" min="400" max="6400" />
+          </div>
+          <div class="setting-row">
+            <div class="setting-label" data-tooltip="Base sensitivity multiplier">Base</div>
+            <input type="range" id="min-sens" class="setting-slider" min="0" max="1" step="0.001" />
+            <input type="number" id="min-sens-value" class="setting-value" min="0" max="1" step="0.001" />
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn" data-tab="micro"><span>Micro</span></button>
+          <button class="tab-btn" data-tab="tracking"><span>Tracking</span></button>
+          <button class="tab-btn" data-tab="flicking"><span>Flicking</span></button>
+        </div>
+
+        <div class="tab-container">
+          <div id="micro-settings" class="tab-content active"></div>
+          <div id="tracking-settings" class="tab-content"></div>
+          <div id="flicking-settings" class="tab-content"></div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="reset-btn">Reset</button>
+          <button id="export-btn">Export LUT</button>
+        </div>
+      </div>
+
+      <div class="plot-panel">
+        <div class="panel-header">
+          <h2>Sensitivity Curve</h2>
+        </div>
+        <div id="sensitivity-plot"></div>
+      </div>
+    </div>
+  </body>
+</html>

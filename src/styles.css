@@ -1,0 +1,802 @@
+:root {
+  /* Modern color palette */
+  --bg-primary: #0a0a0a;
+  --text-primary: #e1e1e1;
+  --text-secondary: #ffffff;
+  --primary: #4d9fff;
+  --error: #ff4d4d;
+  --border: #2a2a2a;
+  --tab-micro: #4d9fff;
+  --tab-tracking: #ff9340;
+  --tab-flicking: #40cf40;
+  
+  /* Modern shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Refined measurements */
+  --corner-radius: 12px;
+  --margin: 20px;
+  --padding: 6px;
+  --widget-height: 32px;
+  --slider-height: 6px;
+  --slider-width: 180px;
+  --label-width: 50px;
+  --value-width: 60px;
+  --button-height: 40px;
+  --settings-panel-width: 360px;
+}
+
+.titlebar {
+  height: 38px;
+  background: transparent;
+  user-select: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 12px;
+  -webkit-app-region: drag;
+  flex-shrink: 0; /* Prevent titlebar from shrinking */
+}
+
+.titlebar-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  -webkit-app-region: no-drag;
+  margin: 0 2px;
+  position: relative; /* For pseudo-element positioning */
+}
+
+.titlebar-button:first-child {
+  margin-right: 4px;
+}
+
+/* macOS-style circle buttons */
+.titlebar-button::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+/* Close button */
+#titlebar-close::before {
+  background: #ff5f57;
+  box-shadow: 0 0 2px rgba(255, 95, 87, 0.2);
+}
+
+#titlebar-close:hover::before {
+  transform: scale(1.12);
+  background: #ff7369;
+  box-shadow: 0 0 8px rgba(255, 95, 87, 0.4);
+}
+
+#titlebar-close:active::before {
+  transform: scale(0.95);
+  background: #ff3d31;
+}
+
+/* Minimize button */
+#titlebar-minimize::before {
+  background: #ffbd2e;
+  box-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
+}
+
+#titlebar-minimize:hover::before {
+  transform: scale(1.12);
+  background: #ffd158;
+  box-shadow: 0 0 8px rgba(255, 189, 46, 0.4);
+}
+
+#titlebar-minimize:active::before {
+  transform: scale(0.95);
+  background: #f0a500;
+}
+
+/* Maximize button */
+#titlebar-maximize::before {
+  background: #28c940;
+  box-shadow: 0 0 2px rgba(40, 201, 64, 0.2);
+}
+
+#titlebar-maximize:hover::before {
+  transform: scale(1.12);
+  background: #58d364;
+  box-shadow: 0 0 8px rgba(40, 201, 64, 0.4);
+}
+
+#titlebar-maximize:active::before {
+  transform: scale(0.95);
+  background: #1da534;
+}
+
+/* Optional: Add subtle glow effect on hover */
+.titlebar-button::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: blur(4px);
+}
+
+#titlebar-close:hover::after {
+  opacity: 0.4;
+  background: #ff5f57;
+}
+
+#titlebar-minimize:hover::after {
+  opacity: 0.4;
+  background: #ffbd2e;
+}
+
+#titlebar-maximize:hover::after {
+  opacity: 0.4;
+  background: #28c940;
+}
+
+/* Hide the default button images */
+.titlebar-button img {
+  display: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: transparent;
+  color: var(--text-primary);
+  user-select: none;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 24px;
+  padding: 24px;
+  box-sizing: border-box;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-app-region: drag;
+}
+
+/* Prevent drag behavior on interactive elements */
+.settings-panel,
+.plot-panel,
+button,
+input,
+.titlebar-button {
+  -webkit-app-region: no-drag;
+}
+
+.plot-panel {
+  flex: 1;
+  min-width: 500px;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--corner-radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+  pointer-events: auto;  /* Changed from none to auto */
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+  will-change: transform;  /* Add GPU acceleration hint */
+}
+
+/* Re-enable pointer events for the legend if needed */
+.plot-panel .legend {
+  pointer-events: auto;
+}
+
+/* Ensure the plot container takes up all available space */
+#plot {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1;
+}
+
+.settings-panel {
+  position: relative;
+  width: fit-content;
+  min-width: 300px;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--corner-radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(100vh - 48px);
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Window Controls */
+.window-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 0;
+  z-index: 1000;
+}
+
+.titlebar-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px; /* Increased from 16px */
+  height: 18px; /* Increased from 16px */
+  -webkit-app-region: no-drag;
+  margin: 0 2px;
+}
+
+.titlebar-button:first-child {
+  margin-right: 4px;
+}
+
+/* macOS-style circle buttons */
+.titlebar-button::before {
+  content: '';
+  width: 14px; /* Increased from 12px */
+  height: 14px; /* Increased from 12px */
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+/* Close button */
+#titlebar-close::before {
+  background: #ff5f57;
+  box-shadow: 0 0 2px rgba(255, 95, 87, 0.2);
+}
+
+#titlebar-close:hover::before {
+  background: #ff7369;
+}
+
+/* Minimize button */
+#titlebar-minimize::before {
+  background: #ffbd2e;
+  box-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
+}
+
+#titlebar-minimize:hover::before {
+  background: #ffd158;
+}
+
+/* Maximize button */
+#titlebar-maximize::before {
+  background: #28c940;
+  box-shadow: 0 0 2px rgba(40, 201, 64, 0.2);
+}
+
+#titlebar-maximize:hover::before {
+  background: #58d364;
+}
+
+/* Headers */
+.panel-header {
+  text-align: center;
+  margin: 0;  /* Remove top/bottom margins */
+  padding: 8px 0;  /* Add consistent padding */
+}
+
+.panel-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+/* Ensure consistent spacing in both panels */
+.settings-panel .panel-header,
+.plot-panel .panel-header {
+  height: 40px;  /* Set fixed height for both headers */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Settings */
+.common-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%; /* Take full width of parent */
+  align-items: center; /* Center children horizontally */
+}
+
+/* Setting Controls */
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.setting-label {
+  min-width: 45px;
+  padding: 4px 8px;
+  background: rgba(42, 42, 42, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text-primary);
+  cursor: help;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.setting-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1;
+  min-width: 120px;
+  height: var(--slider-height);
+  background: var(--border);
+  border-radius: var(--slider-height);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: 0 0 0 0 rgba(77, 159, 255, 0);
+}
+
+.setting-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px 2px rgba(77, 159, 255, 0.4);
+}
+
+.setting-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 15px 3px rgba(77, 159, 255, 0.6);
+}
+
+/* Tab-specific slider colors and glow effects */
+.micro-tab .setting-slider::-webkit-slider-thumb {
+  background: var(--tab-micro);
+  box-shadow: 0 0 0 0 rgba(77, 159, 255, 0);
+}
+
+.micro-tab .setting-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px 2px rgba(77, 159, 255, 0.4);
+}
+
+.micro-tab .setting-slider::-webkit-slider-thumb:active {
+  box-shadow: 0 0 15px 3px rgba(77, 159, 255, 0.6);
+}
+
+.tracking-tab .setting-slider::-webkit-slider-thumb {
+  background: var(--tab-tracking);
+  box-shadow: 0 0 0 0 rgba(255, 147, 64, 0);
+}
+
+.tracking-tab .setting-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px 2px rgba(255, 147, 64, 0.4);
+}
+
+.tracking-tab .setting-slider::-webkit-slider-thumb:active {
+  box-shadow: 0 0 15px 3px rgba(255, 147, 64, 0.6);
+}
+
+.flicking-tab .setting-slider::-webkit-slider-thumb {
+  background: var(--tab-flicking);
+  box-shadow: 0 0 0 0 rgba(64, 207, 64, 0);
+}
+
+.flicking-tab .setting-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px 2px rgba(64, 207, 64, 0.4);
+}
+
+.flicking-tab .setting-slider::-webkit-slider-thumb:active {
+  box-shadow: 0 0 15px 3px rgba(64, 207, 64, 0.6);
+}
+
+.setting-value {
+  width: 60px;
+  padding: 4px 8px;
+  background: rgba(42, 42, 42, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.setting-value:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(52, 52, 52, 0.8);
+  box-shadow: 
+    0 0 5px rgba(77, 159, 255, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Tab-specific value input styling */
+.micro-tab .setting-value:focus {
+  border-color: var(--tab-micro);
+}
+
+.tracking-tab .setting-value:focus {
+  border-color: var(--tab-tracking);
+}
+
+.flicking-tab .setting-value:focus {
+  border-color: var(--tab-flicking);
+}
+
+/* Remove arrows from number inputs */
+.setting-value::-webkit-outer-spin-button,
+.setting-value::-webkit-inner-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.setting-value[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--corner-radius);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Micro tab */
+.tab-btn[data-tab="micro"] {
+  background: rgba(77, 159, 255, 0.1);
+  border: 1px solid rgba(77, 159, 255, 0.2);
+}
+
+.tab-btn[data-tab="micro"]:hover {
+  background: rgba(77, 159, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(77, 159, 255, 0.2);
+}
+
+.tab-btn[data-tab="micro"].active {
+  background: var(--tab-micro);
+  color: var(--text-secondary);
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(77, 159, 255, 0.3);
+}
+
+/* Tracking tab */
+.tab-btn[data-tab="tracking"] {
+  background: rgba(255, 147, 64, 0.1);
+  border: 1px solid rgba(255, 147, 64, 0.2);
+}
+
+.tab-btn[data-tab="tracking"]:hover {
+  background: rgba(255, 147, 64, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 147, 64, 0.2);
+}
+
+.tab-btn[data-tab="tracking"].active {
+  background: var(--tab-tracking);
+  color: var(--text-secondary);
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(255, 147, 64, 0.3);
+}
+
+/* Flicking tab */
+.tab-btn[data-tab="flicking"] {
+  background: rgba(64, 207, 64, 0.1);
+  border: 1px solid rgba(64, 207, 64, 0.2);
+}
+
+.tab-btn[data-tab="flicking"]:hover {
+  background: rgba(64, 207, 64, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 207, 64, 0.2);
+}
+
+.tab-btn[data-tab="flicking"].active {
+  background: var(--tab-flicking);
+  color: var(--text-secondary);
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(64, 207, 64, 0.3);
+}
+
+/* Common styles for all tab buttons */
+.tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tab-btn:hover::before {
+  opacity: 1;
+}
+
+.tab-btn.active::before {
+  opacity: 0.2;
+}
+
+.tab-btn:active {
+  transform: scale(0.98);
+}
+
+.tab-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tab content spacing */
+.tab-content {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%; /* Take full width of parent */
+  align-items: center; /* Center children horizontally */
+  flex: 1; /* Allow tab content to take remaining space */
+  overflow-y: auto; /* Add scroll to tab content if needed */
+}
+
+.tab-content.active {
+  display: flex;
+}
+
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+#reset-btn, #export-btn {
+  flex: 1;
+  height: var(--button-height);
+  border: none;
+  border-radius: var(--corner-radius);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+#reset-btn {
+  background: var(--error);
+  box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
+}
+
+#export-btn {
+  background: var(--primary);
+  box-shadow: 0 0 0 0 rgba(77, 159, 255, 0);
+}
+
+/* Hover effects */
+#reset-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 0 20px 0 rgba(255, 77, 77, 0.3),
+    0 8px 16px -4px rgba(255, 77, 77, 0.2);
+  background: #ff6666;
+}
+
+#export-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 0 20px 0 rgba(77, 159, 255, 0.3),
+    0 8px 16px -4px rgba(77, 159, 255, 0.2);
+  background: #66adff;
+}
+
+/* Active/Click effects */
+#reset-btn:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 0 30px 0 rgba(255, 77, 77, 0.4),
+    0 2px 8px -2px rgba(255, 77, 77, 0.3);
+  background: #ff3333;
+}
+
+#export-btn:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 0 30px 0 rgba(77, 159, 255, 0.4),
+    0 2px 8px -2px rgba(77, 159, 255, 0.3);
+  background: #3d8fff;
+}
+
+/* Optional: Add ripple effect */
+#reset-btn::after, #export-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+#reset-btn:active::after, #export-btn:active::after {
+  animation: ripple 0.5s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(40, 40);
+    opacity: 0;
+  }
+}
+
+/* Plot Customization */
+#sensitivity-plot {
+  flex: 1;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0;
+  transform: translateZ(0);  /* Force GPU acceleration */
+}
+
+/* Optional: Add subtle hover effect for window buttons */
+.titlebar-button:hover::before {
+  transform: scale(1.1);
+}
+
+/* Remove any bottom margin from the last element in settings panel */
+.settings-panel > *:last-child {
+  margin-bottom: 0;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in input fields */
+input[type="text"],
+input[type="number"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Modern tooltip styles */
+[data-tooltip] {
+  cursor: help;
+}
+
+.floating-tooltip {
+  position: fixed;
+  display: none;
+  padding: 8px 12px;
+  background: rgba(10, 10, 10, 0.95);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  white-space: pre-line;
+  z-index: 2147483647;
+  pointer-events: none;
+  max-width: 280px;
+  width: max-content;
+  text-align: left;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Neon border effect */
+  border: 1px solid var(--primary);
+  box-shadow: 
+    0 0 5px rgba(77, 159, 255, 0.3),
+    0 0 10px rgba(77, 159, 255, 0.2),
+    inset 0 0 5px rgba(77, 159, 255, 0.1);
+  
+  backdrop-filter: blur(8px);
+  transform-origin: top;
+  animation: tooltip-fade 0.2s ease-out;
+}
+
+/* Add color variations based on active tab */
+.micro-tab .floating-tooltip {
+  border-color: var(--tab-micro);
+  box-shadow: 
+    0 0 5px rgba(77, 159, 255, 0.3),
+    0 0 10px rgba(77, 159, 255, 0.2),
+    inset 0 0 5px rgba(77, 159, 255, 0.1);
+}
+
+.tracking-tab .floating-tooltip {
+  border-color: var(--tab-tracking);
+  box-shadow: 
+    0 0 5px rgba(255, 147, 64, 0.3),
+    0 0 10px rgba(255, 147, 64, 0.2),
+    inset 0 0 5px rgba(255, 147, 64, 0.1);
+}
+
+.flicking-tab .floating-tooltip {
+  border-color: var(--tab-flicking);
+  box-shadow: 
+    0 0 5px rgba(64, 207, 64, 0.3),
+    0 0 10px rgba(64, 207, 64, 0.2),
+    inset 0 0 5px rgba(64, 207, 64, 0.1);
+}
+
+@keyframes tooltip-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
