@@ -1,5 +1,5 @@
 :root {
-  /* Modern color palette */
+  /* Color palette */
   --bg-primary: #0a0a0a;
   --text-primary: #e1e1e1;
   --text-secondary: #ffffff;
@@ -10,12 +10,12 @@
   --tab-tracking: #ff9340;
   --tab-flicking: #40cf40;
   
-  /* Modern shadows */
+  /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   
-  /* Refined measurements */
+  /* Layout */
   --corner-radius: 12px;
   --margin: 20px;
   --padding: 6px;
@@ -28,126 +28,7 @@
   --settings-panel-width: 360px;
 }
 
-.titlebar {
-  height: 38px;
-  background: transparent;
-  user-select: none;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 12px;
-  -webkit-app-region: drag;
-  flex-shrink: 0; /* Prevent titlebar from shrinking */
-}
-
-.titlebar-button {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 18px;
-  height: 18px;
-  -webkit-app-region: no-drag;
-  margin: 0 2px;
-  position: relative; /* For pseudo-element positioning */
-}
-
-.titlebar-button:first-child {
-  margin-right: 4px;
-}
-
-/* macOS-style circle buttons */
-.titlebar-button::before {
-  content: '';
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center;
-}
-
-/* Close button */
-#titlebar-close::before {
-  background: #ff5f57;
-  box-shadow: 0 0 2px rgba(255, 95, 87, 0.2);
-}
-
-#titlebar-close:hover::before {
-  transform: scale(1.12);
-  background: #ff7369;
-  box-shadow: 0 0 8px rgba(255, 95, 87, 0.4);
-}
-
-#titlebar-close:active::before {
-  transform: scale(0.95);
-  background: #ff3d31;
-}
-
-/* Minimize button */
-#titlebar-minimize::before {
-  background: #ffbd2e;
-  box-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
-}
-
-#titlebar-minimize:hover::before {
-  transform: scale(1.12);
-  background: #ffd158;
-  box-shadow: 0 0 8px rgba(255, 189, 46, 0.4);
-}
-
-#titlebar-minimize:active::before {
-  transform: scale(0.95);
-  background: #f0a500;
-}
-
-/* Maximize button */
-#titlebar-maximize::before {
-  background: #28c940;
-  box-shadow: 0 0 2px rgba(40, 201, 64, 0.2);
-}
-
-#titlebar-maximize:hover::before {
-  transform: scale(1.12);
-  background: #58d364;
-  box-shadow: 0 0 8px rgba(40, 201, 64, 0.4);
-}
-
-#titlebar-maximize:active::before {
-  transform: scale(0.95);
-  background: #1da534;
-}
-
-/* Optional: Add subtle glow effect on hover */
-.titlebar-button::after {
-  content: '';
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  opacity: 0;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: blur(4px);
-}
-
-#titlebar-close:hover::after {
-  opacity: 0.4;
-  background: #ff5f57;
-}
-
-#titlebar-minimize:hover::after {
-  opacity: 0.4;
-  background: #ffbd2e;
-}
-
-#titlebar-maximize:hover::after {
-  opacity: 0.4;
-  background: #28c940;
-}
-
-/* Hide the default button images */
-.titlebar-button img {
-  display: none;
-}
-
+/* Base styles */
 body {
   margin: 0;
   padding: 0;
@@ -160,6 +41,7 @@ body {
   display: flex;
 }
 
+/* Layout containers */
 .container {
   flex: 1;
   display: flex;
@@ -172,7 +54,7 @@ body {
   -webkit-app-region: drag;
 }
 
-/* Prevent drag behavior on interactive elements */
+/* Prevent drag on interactive elements */
 .settings-panel,
 .plot-panel,
 button,
@@ -181,56 +63,43 @@ input,
   -webkit-app-region: no-drag;
 }
 
-.plot-panel {
-  flex: 1;
-  min-width: 500px;
+/* Panel styles */
+.plot-panel,
+.settings-panel {
   background: rgba(10, 10, 10, 0.95);
   border: 1px solid var(--border);
   border-radius: var(--corner-radius);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+  height: calc(100vh - 48px);
+}
+
+.plot-panel {
+  flex: 1;
+  min-width: 500px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   box-sizing: border-box;
-  height: calc(100vh - 48px);
   overflow: hidden;
-  pointer-events: auto;  /* Changed from none to auto */
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-lg);
-  will-change: transform;  /* Add GPU acceleration hint */
-}
-
-/* Re-enable pointer events for the legend if needed */
-.plot-panel .legend {
   pointer-events: auto;
-}
-
-/* Ensure the plot container takes up all available space */
-#plot {
-  width: 100% !important;
-  height: 100% !important;
-  flex: 1;
+  will-change: transform;
 }
 
 .settings-panel {
   position: relative;
   width: fit-content;
   min-width: 300px;
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid var(--border);
-  border-radius: var(--corner-radius);
   padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  height: calc(100vh - 48px);
   overflow-y: auto;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-lg);
 }
 
-/* Window Controls */
+/* Window controls */
 .window-controls {
   position: absolute;
   top: 12px;
@@ -240,57 +109,88 @@ input,
   z-index: 1000;
 }
 
+/* Titlebar buttons base styles */
 .titlebar-button {
+  --button-size: 18px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 18px; /* Increased from 16px */
-  height: 18px; /* Increased from 16px */
-  -webkit-app-region: no-drag;
+  width: var(--button-size);
+  height: var(--button-size);
   margin: 0 2px;
+  position: relative;
 }
 
+.titlebar-button::before,
+.titlebar-button::after {
+  content: '';
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.titlebar-button::before {
+  width: 14px;
+  height: 14px;
+  transform-origin: center;
+}
+
+.titlebar-button::after {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  filter: blur(4px);
+}
+
+/* Button variants */
 .titlebar-button:first-child {
   margin-right: 4px;
 }
 
-/* macOS-style circle buttons */
-.titlebar-button::before {
-  content: '';
-  width: 14px; /* Increased from 12px */
-  height: 14px; /* Increased from 12px */
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
 /* Close button */
-#titlebar-close::before {
-  background: #ff5f57;
-  box-shadow: 0 0 2px rgba(255, 95, 87, 0.2);
-}
-
-#titlebar-close:hover::before {
-  background: #ff7369;
-}
+#titlebar-close::before { background: #ff5f57; box-shadow: 0 0 2px rgba(255, 95, 87, 0.2); }
+#titlebar-close:hover::before { background: #ff7369; transform: scale(1.12); box-shadow: 0 0 8px rgba(255, 95, 87, 0.4); }
+#titlebar-close:active::before { background: #ff3d31; transform: scale(0.95); }
+#titlebar-close:hover::after { opacity: 0.4; background: #ff5f57; }
 
 /* Minimize button */
-#titlebar-minimize::before {
-  background: #ffbd2e;
-  box-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
-}
-
-#titlebar-minimize:hover::before {
-  background: #ffd158;
-}
+#titlebar-minimize::before { background: #ffbd2e; box-shadow: 0 0 2px rgba(255, 189, 46, 0.2); }
+#titlebar-minimize:hover::before { background: #ffd158; transform: scale(1.12); box-shadow: 0 0 8px rgba(255, 189, 46, 0.4); }
+#titlebar-minimize:active::before { background: #f0a500; transform: scale(0.95); }
+#titlebar-minimize:hover::after { opacity: 0.4; background: #ffbd2e; }
 
 /* Maximize button */
-#titlebar-maximize::before {
-  background: #28c940;
-  box-shadow: 0 0 2px rgba(40, 201, 64, 0.2);
+#titlebar-maximize::before { background: #28c940; box-shadow: 0 0 2px rgba(40, 201, 64, 0.2); }
+#titlebar-maximize:hover::before { background: #58d364; transform: scale(1.12); box-shadow: 0 0 8px rgba(40, 201, 64, 0.4); }
+#titlebar-maximize:active::before { background: #1da534; transform: scale(0.95); }
+#titlebar-maximize:hover::after { opacity: 0.4; background: #28c940; }
+
+/* Plot styles */
+#plot {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1;
 }
 
-#titlebar-maximize:hover::before {
-  background: #58d364;
+/* Tab content */
+.tab-content {
+  display: none;
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide button images */
+.titlebar-button img {
+  display: none;
 }
 
 /* Headers */
@@ -318,14 +218,27 @@ input,
   justify-content: center;
 }
 
-/* Settings */
+/* Common settings container styles */
+.common-settings-container {
+  background: rgba(15, 15, 15, 0.7);
+  border: 1px solid var(--text-secondary);
+  border-radius: var(--corner-radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2),
+              0 0 15px rgba(255, 255, 255, 0.1);
+  transition: border-color 0.3s ease;
+}
+
 .common-settings {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
-  width: 100%; /* Take full width of parent */
-  align-items: center; /* Center children horizontally */
+  width: 100%;
+  align-items: center;
 }
 
 /* Setting Controls */
@@ -587,18 +500,121 @@ input,
 }
 
 /* Tab content spacing */
+.tab-container {
+  background: rgba(15, 15, 15, 0.7);
+  border: 2px solid var(--tab-micro);
+  border-radius: var(--corner-radius);
+  padding: 20px;
+  margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Remove any hover effects */
+.tab-container:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Tab states */
+.micro-tab {
+  border-color: var(--tab-micro);
+}
+
+.micro-tab.interacting {
+  border-color: rgba(77, 159, 255, 0.4);
+}
+
+.tracking-tab {
+  border-color: var(--tab-tracking);
+}
+
+.tracking-tab.interacting {
+  border-color: rgba(255, 147, 64, 0.4);
+}
+
+.flicking-tab {
+  border-color: var(--tab-flicking);
+}
+
+.flicking-tab.interacting {
+  border-color: rgba(64, 207, 64, 0.4);
+}
+
+/* Optional: Add glow effects for each tab */
+.tab-container.micro-tab {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2),
+              0 0 15px rgba(77, 159, 255, 0.1);
+}
+
+.tab-container.tracking-tab {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2),
+              0 0 15px rgba(255, 147, 64, 0.1);
+}
+
+.tab-container.flicking-tab {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2),
+              0 0 15px rgba(64, 207, 64, 0.1);
+}
+
+.tab-container:hover {
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.25);
+}
+
 .tab-content {
   display: none;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%; /* Take full width of parent */
-  align-items: center; /* Center children horizontally */
-  flex: 1; /* Allow tab content to take remaining space */
-  overflow-y: auto; /* Add scroll to tab content if needed */
+  width: 100%;
+  animation: fadeIn 0.3s ease;
 }
 
 .tab-content.active {
+  display: block;
+}
+
+/* Add smooth animation for tab transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhance the setting labels */
+.setting-label {
+  font-weight: 500;
+  color: var(--text-primary);
+  opacity: 0.9;
+  margin-bottom: 4px;
+  font-size: 0.95em;
+  letter-spacing: 0.01em;
+}
+
+/* Style the sliders container */
+.slider-container {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Add subtle hover effects */
+.tab-container:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.25);
+}
+
+/* Optional: Add some spacing between settings within the container */
+.setting-row {
+  margin-bottom: 12px;
+}
+
+.setting-row:last-child {
+  margin-bottom: 0;
 }
 
 /* Action buttons container */
@@ -799,4 +815,65 @@ input[type="number"] {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Common settings slider styles */
+.common-settings .setting-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--slider-width);
+  height: var(--slider-height);
+  border-radius: var(--corner-radius);
+  background: var(--border);
+  outline: none;
+}
+
+/* Slider thumb (button) styles for common settings */
+.common-settings .setting-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+/* Hover effect for the slider thumb */
+.common-settings .setting-slider::-webkit-slider-thumb:hover {
+  background: var(--text-secondary);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+/* Active/pressed effect for the slider thumb */
+.common-settings .setting-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  background: var(--text-secondary);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+}
+
+/* Firefox specific styles */
+.common-settings .setting-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.common-settings .setting-slider::-moz-range-thumb:hover {
+  background: var(--text-secondary);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.common-settings .setting-slider::-moz-range-thumb:active {
+  transform: scale(0.95);
+  background: var(--text-secondary);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
 }

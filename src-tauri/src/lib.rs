@@ -131,6 +131,11 @@ mod commands {
     pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
         super::calculate_curve(settings)
     }
+
+    #[tauri::command]
+    pub fn reset_settings() -> Settings {
+        Settings::default()
+    }
 }
 
 pub fn run() {
@@ -139,6 +144,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_default_settings,
             commands::calculate_curve,
+            commands::reset_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

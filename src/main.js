@@ -17,6 +17,36 @@ document
   .getElementById('titlebar-close')
   ?.addEventListener('click', () => appWindow.close());
 
+// Reset button handler
+document
+  .getElementById('reset-btn')
+  ?.addEventListener('click', async () => {
+    console.log('Reset button clicked'); // Debug log
+    settings = await invoke('get_default_settings');
+    updateUIFromSettings();
+    updatePlot();
+  });
+
+// Export button handler
+document
+  .getElementById('export-btn')
+  ?.addEventListener('click', async () => {
+    const points = await invoke('calculate_curve', { settings });
+    
+    // Format the points as a LUT string (skip first point as in old_app.rs)
+    const lut = points
+      .slice(1)  // Skip first point
+      .map(([x, y]) => `${x},${y.toFixed(4)}`)
+      .join(';\n');
+    
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(lut);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  });
+
 let settings = null;
 let currentTab = 'micro';
 
@@ -85,7 +115,8 @@ function updateTabSettings(tab) {
   const container = document.getElementById(`${tab}-settings`);
   container.innerHTML = ''; // Clear existing settings
 
-  // Define label mappings and tooltips
+  // Define settings order and their properties
+  const settingsOrder = ['range', 'growth_base', 'max_sens'];
   const settingInfo = {
     'range': {
       label: 'Range',
@@ -102,7 +133,10 @@ function updateTabSettings(tab) {
   };
 
   const tabSettings = settings[tab];
-  for (const [key, value] of Object.entries(tabSettings)) {
+  
+  // Create settings in specified order
+  for (const key of settingsOrder) {
+    const value = tabSettings[key];
     const row = document.createElement('div');
     row.className = 'setting-row';
     
@@ -142,6 +176,34 @@ function updateTabSettings(tab) {
       slider.value = e.target.value;
       settings[tab][key] = parseFloat(e.target.value);
       updatePlot();
+    });
+
+    // Add these event listeners to your slider creation code
+    slider.addEventListener('mousedown', () => {
+      const tabContainer = document.querySelector('.tab-container');
+      tabContainer.classList.add('interacting');
+    });
+
+    slider.addEventListener('mouseup', () => {
+      const tabContainer = document.querySelector('.tab-container');
+      tabContainer.classList.remove('interacting');
+    });
+
+    // Also handle mouse leaving the window
+    window.addEventListener('mouseup', () => {
+      const tabContainer = document.querySelector('.tab-container');
+      tabContainer.classList.remove('interacting');
+    });
+
+    // For the number inputs
+    numberInput.addEventListener('focus', () => {
+      const tabContainer = document.querySelector('.tab-container');
+      tabContainer.classList.add('interacting');
+    });
+
+    numberInput.addEventListener('blur', () => {
+      const tabContainer = document.querySelector('.tab-container');
+      tabContainer.classList.remove('interacting');
     });
   }
   
@@ -394,24 +456,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initializeSettings();
 
-  // Tab switching
+  // Add this function to handle tab switching
+  function switchTab(tab) {
+    currentTab = tab;
+    
+    // Update active states
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.getAttribute('data-tab') === tab) {
+        btn.classList.add('active');
+      }
+    });
+
+    // Hide all tab content and show the selected one
+    document.querySelectorAll('[id$="-settings"]').forEach(content => {
+      content.style.display = 'none';
+    });
+    document.getElementById(`${tab}-settings`).style.display = 'block';
+
+    // Update tab container classes only - remove the direct style setting
+    const tabContainer = document.querySelector('.tab-container');
+    tabContainer.className = 'tab-container';
+    tabContainer.classList.add(`${tab}-tab`);
+  }
+
+  // Update the tab button event listeners
   document.querySelectorAll('.tab-btn').forEach(button => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      button.classList.add('active');
-      const tab = button.dataset.tab;
-      document.getElementById(`${tab}-settings`).classList.add('active');
-      currentTab = tab;
+      const tab = button.getAttribute('data-tab');
+      switchTab(tab);
     });
   });
 
-  // Reset button
+  // Make sure to set initial tab on load
+  document.addEventListener('DOMContentLoaded', () => {
+    switchTab('micro'); // Set default tab
+  });
+
+  // Reset button event listener
   document.getElementById('reset-btn').addEventListener('click', async () => {
-    settings = await invoke('get_default_settings');
-    updateUIFromSettings();
-    updatePlot();
+    try {
+      // Get fresh default settings from Rust
+      settings = await invoke('reset_settings');
+      
+      // Update UI with new settings
+      updateUIFromSettings();
+      
+      // Update the plot
+      await updatePlot();
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+    }
   });
 
   // Export button

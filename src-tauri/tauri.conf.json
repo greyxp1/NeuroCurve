@@ -12,9 +12,9 @@
       {
         "title": "NeuroCurve",
         "width": 1140,
-        "height": 535,
+        "height": 620,
         "minWidth": 1140,
-        "minHeight": 535,
+        "minHeight": 620,
         "resizable": true,
         "decorations": false,
         "transparent": true

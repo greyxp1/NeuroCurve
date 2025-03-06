@@ -22,21 +22,23 @@
           <h2>Settings</h2>
         </div>
 
-        <div class="common-settings">
-          <div class="setting-row">
-            <div class="setting-label" data-tooltip="Mouse DPI (Dots Per Inch)">DPI</div>
-            <input type="range" id="dpi" class="setting-slider" min="400" max="6400" step="50" />
-            <input type="number" id="dpi-value" class="setting-value" min="400" max="6400" />
-          </div>
-          <div class="setting-row">
-            <div class="setting-label" data-tooltip="Base sensitivity multiplier">Base</div>
-            <input type="range" id="min-sens" class="setting-slider" min="0" max="1" step="0.001" />
-            <input type="number" id="min-sens-value" class="setting-value" min="0" max="1" step="0.001" />
+        <div class="common-settings-container">
+          <div class="common-settings">
+            <div class="setting-row">
+              <div class="setting-label" data-tooltip="Mouse DPI (Dots Per Inch)">DPI</div>
+              <input type="range" id="dpi" class="setting-slider" min="400" max="6400" step="50" />
+              <input type="number" id="dpi-value" class="setting-value" min="400" max="6400" />
+            </div>
+            <div class="setting-row">
+              <div class="setting-label" data-tooltip="Base sensitivity multiplier">Base</div>
+              <input type="range" id="min-sens" class="setting-slider" min="0" max="1" step="0.001" />
+              <input type="number" id="min-sens-value" class="setting-value" min="0" max="1" step="0.001" />
+            </div>
           </div>
         </div>
 
         <div class="tabs">
-          <button class="tab-btn" data-tab="micro"><span>Micro</span></button>
+          <button class="tab-btn active" data-tab="micro"><span>Micro</span></button>
           <button class="tab-btn" data-tab="tracking"><span>Tracking</span></button>
           <button class="tab-btn" data-tab="flicking"><span>Flicking</span></button>
         </div>
