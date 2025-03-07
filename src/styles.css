@@ -158,18 +158,25 @@ body {
   height: 100vh;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
 }
 
 .container {
   flex: 1;
   display: flex;
-  flex-direction: row-reverse;
-  gap: 24px;
-  padding: 24px;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
   box-sizing: border-box;
-  height: 100vh;
   overflow: hidden;
-  -webkit-app-region: drag;
+  background-color: transparent;
+  height: 100vh;
+}
+
+/* Remove the separate top-drag-region div and its styles */
+
+.plot-panel, .settings-panel {
+  margin-top: 0; /* Remove the margin offset */
 }
 
 /* Prevent drag behavior on interactive elements */
@@ -184,20 +191,21 @@ input,
 .plot-panel {
   flex: 1;
   min-width: 500px;
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid var(--border);
+  background: rgba(12, 12, 12, 0.97); /* Even darker background with higher opacity */
   border-radius: var(--corner-radius);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   box-sizing: border-box;
-  height: calc(100vh - 48px);
   overflow: hidden;
-  pointer-events: auto;  /* Changed from none to auto */
-  backdrop-filter: blur(10px);
+  pointer-events: auto;
   box-shadow: var(--shadow-lg);
-  will-change: transform;  /* Add GPU acceleration hint */
+  will-change: transform;
+  height: 100%;
+  backdrop-filter: blur(12px) saturate(110%); /* Slightly reduced saturation */
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.02); /* Slightly reduced border opacity */
 }
 
 /* Re-enable pointer events for the legend if needed */
@@ -205,62 +213,94 @@ input,
   pointer-events: auto;
 }
 
-/* Ensure the plot container takes up all available space */
-#plot {
-  width: 100% !important;
-  height: 100% !important;
+/* Ensure the plot container takes up remaining space */
+#sensitivity-plot {
   flex: 1;
+  min-height: 0; /* Allow container to shrink */
 }
 
 .settings-panel {
   position: relative;
   width: fit-content;
   min-width: 300px;
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid var(--border);
+  background: rgba(12, 12, 12, 0.97); /* Even darker background with higher opacity */
   border-radius: var(--corner-radius);
   padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  height: calc(100vh - 48px);
+  height: 100%;
   overflow-y: auto;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px) saturate(110%); /* Slightly reduced saturation */
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.02); /* Slightly reduced border opacity */
+}
+
+/* Add a noise texture overlay for the acrylic effect */
+.plot-panel::before,
+.settings-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  opacity: 0.2; /* Further reduced noise opacity */
+  pointer-events: none;
+  border-radius: var(--corner-radius);
+  mix-blend-mode: overlay;
+}
+
+/* Ensure proper stacking context */
+.plot-panel,
+.settings-panel {
+  position: relative;
+  isolation: isolate;
 }
 
 /* Window Controls */
 .window-controls {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 6px;
+  right: 4px;
   display: flex;
   gap: 0;
   z-index: 1000;
+  -webkit-app-region: no-drag;
+  padding: 2px;
 }
 
 .titlebar-button {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 18px; /* Increased from 16px */
-  height: 18px; /* Increased from 16px */
+  width: 16px;  /* Increased from 14px */
+  height: 16px;  /* Increased from 14px */
   -webkit-app-region: no-drag;
-  margin: 0 2px;
+  margin: 0 2px;  /* Increased from 1px */
+  position: relative;
 }
 
 .titlebar-button:first-child {
-  margin-right: 4px;
+  margin-right: 3px;  /* Increased from 2px */
 }
 
 /* macOS-style circle buttons */
 .titlebar-button::before {
   content: '';
-  width: 14px; /* Increased from 12px */
-  height: 14px; /* Increased from 12px */
+  width: 12px;  /* Increased from 10px */
+  height: 12px;  /* Increased from 10px */
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+/* Optional: Adjust the glow effect size for smaller buttons */
+.titlebar-button::after {
+  width: 12px;  /* Increased from 10px */
+  height: 12px;  /* Increased from 10px */
 }
 
 /* Close button */
@@ -295,9 +335,11 @@ input,
 
 /* Headers */
 .panel-header {
-  text-align: center;
-  margin: 0;  /* Remove top/bottom margins */
+  width: 100%;
+  text-align: center;  /* Center the header text */
+  margin-bottom: 16px;  /* Add some space below the header */
   padding: 8px 0;  /* Add consistent padding */
+  -webkit-app-region: drag;
 }
 
 .panel-header h2 {
@@ -319,31 +361,44 @@ input,
 }
 
 /* Settings */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  overflow-x: hidden;
+  align-items: center;  /* Center all content */
+}
+
 .common-settings {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
-  width: 100%; /* Take full width of parent */
-  align-items: center; /* Center children horizontally */
+  width: 248px;  /* 280px - (16px * 2) padding */
+  align-items: center;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* Setting Controls */
 .setting-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .setting-label {
-  min-width: 45px;
-  padding: 4px 8px;
+  min-width: 40px;  /* Reduced from 45px */
+  padding: 4px 6px;  /* Reduced padding */
   background: rgba(42, 42, 42, 0.6);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;  /* Reduced font size */
   font-weight: 500;
   text-align: center;
   color: var(--text-primary);
@@ -356,15 +411,16 @@ input,
   appearance: none;
   -webkit-appearance: none;
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
   height: var(--slider-height);
   background: var(--border);
   border-radius: var(--slider-height);
   outline: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.3s ease, value 0.3s ease;
 }
 
+/* Animate the thumb position */
 .setting-slider::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
@@ -373,9 +429,23 @@ input,
   border-radius: 50%;
   background: var(--primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   border: none;
   box-shadow: 0 0 0 0 rgba(77, 159, 255, 0);
+}
+
+/* Add a class for animating */
+.setting-slider.animating {
+  animation: slide-value 0.3s ease-out forwards;
+}
+
+@keyframes slide-value {
+  from {
+    color: transparent;
+  }
+  to {
+    color: transparent;
+  }
 }
 
 .setting-slider::-webkit-slider-thumb:hover {
@@ -429,12 +499,12 @@ input,
 }
 
 .setting-value {
-  width: 60px;
-  padding: 4px 8px;
+  width: 50px;  /* Reduced from 60px */
+  padding: 4px 6px;  /* Reduced padding */
   background: rgba(42, 42, 42, 0.6);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;  /* Reduced font size */
   color: var(--text-primary);
   text-align: center;
   transition: all 0.2s ease;
@@ -478,16 +548,26 @@ input,
 
 /* Tabs */
 .tabs {
+  position: relative;
+  z-index: 1;
+  padding: 8px;
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 12px;
   width: 100%;
   justify-content: center;
+  padding: 0;
+}
+
+.tab-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 12px 16px;
+  flex: 0 1 auto;
+  padding: 0;  /* Remove padding */
   border: none;
   border-radius: var(--corner-radius);
   background: rgba(255, 255, 255, 0.03);
@@ -497,6 +577,14 @@ input,
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  font-size: 13px;
+  width: 65px;
+  min-width: 65px;
+  max-width: 65px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 28px;  /* Add fixed height */
 }
 
 /* Micro tab */
@@ -584,17 +672,29 @@ input,
 .tab-btn span {
   position: relative;
   z-index: 1;
+  display: flex;  /* Change to flex */
+  justify-content: center;  /* Center horizontally */
+  align-items: center;  /* Center vertically */
+  width: 100%;
+  height: 100%;  /* Take full height */
+  line-height: 1;  /* Reset line height */
+  padding: 0 2px;  /* Add small horizontal padding */
+  box-sizing: border-box;
 }
 
 /* Tab content spacing */
 .tab-content {
+  position: relative;
+  z-index: 1;
+  padding: 8px;
   display: none;
   flex-direction: column;
   gap: 8px;
-  width: 100%; /* Take full width of parent */
-  align-items: center; /* Center children horizontally */
-  flex: 1; /* Allow tab content to take remaining space */
-  overflow-y: auto; /* Add scroll to tab content if needed */
+  width: 248px;  /* 280px - (16px * 2) padding */
+  align-items: center;
+  padding: 0;
+  box-sizing: border-box;
+  margin: 0 auto;  /* Center the container */
 }
 
 .tab-content.active {
@@ -765,6 +865,17 @@ input[type="number"] {
   animation: tooltip-fade 0.2s ease-out;
 }
 
+@keyframes tooltip-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Add color variations based on active tab */
 .micro-tab .floating-tooltip {
   border-color: var(--tab-micro);
@@ -790,13 +901,16 @@ input[type="number"] {
     inset 0 0 5px rgba(64, 207, 64, 0.1);
 }
 
-@keyframes tooltip-fade {
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Debug mode for drag regions */
+.debug-drag-regions [data-tauri-drag-region] {
+  background-color: rgba(255, 0, 0, 0.2) !important;
+  outline: 1px solid red !important;
+}
+
+.debug-drag-regions .titlebar-button,
+.debug-drag-regions button,
+.debug-drag-regions input,
+.debug-drag-regions select {
+  background-color: rgba(0, 255, 0, 0.2) !important;
+  outline: 1px solid green !important;
 }

@@ -10,15 +10,9 @@
   </head>
 
   <body>
-    <div data-tauri-drag-region class="container">
+    <div class="container">
       <div class="settings-panel">
-        <div class="window-controls">
-          <div class="titlebar-button" id="titlebar-minimize"></div>
-          <div class="titlebar-button" id="titlebar-maximize"></div>
-          <div class="titlebar-button" id="titlebar-close"></div>
-        </div>
-
-        <div class="panel-header">
+        <div class="panel-header" data-tauri-drag-region>
           <h2>Settings</h2>
         </div>
 
@@ -35,13 +29,16 @@
           </div>
         </div>
 
-        <div class="tabs">
-          <button class="tab-btn" data-tab="micro"><span>Micro</span></button>
-          <button class="tab-btn" data-tab="tracking"><span>Tracking</span></button>
-          <button class="tab-btn" data-tab="flicking"><span>Flicking</span></button>
+        <div class="tab-border-container">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="micro"><span>Micro</span></button>
+            <button class="tab-btn" data-tab="tracking"><span>Tracking</span></button>
+            <button class="tab-btn" data-tab="flicking"><span>Flicking</span></button>
+          </div>
+          <div class="tab-connection"></div>
         </div>
 
-        <div class="tab-container">
+        <div class="tab-content-border">
           <div id="micro-settings" class="tab-content active"></div>
           <div id="tracking-settings" class="tab-content"></div>
           <div id="flicking-settings" class="tab-content"></div>
@@ -54,7 +51,12 @@
       </div>
 
       <div class="plot-panel">
-        <div class="panel-header">
+        <div class="window-controls">
+          <div class="titlebar-button" id="titlebar-minimize"></div>
+          <div class="titlebar-button" id="titlebar-maximize"></div>
+          <div class="titlebar-button" id="titlebar-close"></div>
+        </div>
+        <div class="panel-header" data-tauri-drag-region>
           <h2>Sensitivity Curve</h2>
         </div>
         <div id="sensitivity-plot"></div>

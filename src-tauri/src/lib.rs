@@ -136,6 +136,11 @@ mod commands {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|_app| {
+            // We don't need to apply any window-level effects
+            // The CSS backdrop-filter will handle the acrylic effect for panels
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_default_settings,
             commands::calculate_curve,
