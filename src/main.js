@@ -30,6 +30,36 @@ document
   .getElementById('titlebar-close')
   ?.addEventListener('click', () => appWindow.close());
 
+// Reset button handler
+document
+  .getElementById('reset-btn')
+  ?.addEventListener('click', async () => {
+    console.log('Reset button clicked'); // Debug log
+    settings = await invoke('get_default_settings');
+    updateUIFromSettings();
+    updatePlot();
+  });
+
+// Export button handler
+document
+  .getElementById('export-btn')
+  ?.addEventListener('click', async () => {
+    const points = await invoke('calculate_curve', { settings });
+    
+    // Format the points as a LUT string (skip first point as in old_app.rs)
+    const lut = points
+      .slice(1)  // Skip first point
+      .map(([x, y]) => `${x},${y.toFixed(4)}`)
+      .join(';\n');
+    
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(lut);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  });
+
 let settings = null;
 let currentTab = 'micro';
 let isAnimating = false;
