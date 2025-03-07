@@ -30,29 +30,25 @@ document
   .getElementById('titlebar-close')
   ?.addEventListener('click', () => appWindow.close());
 
-// Reset button handler
 document
   .getElementById('reset-btn')
   ?.addEventListener('click', async () => {
-    console.log('Reset button clicked'); // Debug log
+    console.log('Reset button clicked');
     settings = await invoke('get_default_settings');
     updateUIFromSettings();
     updatePlot();
   });
 
-// Export button handler
 document
   .getElementById('export-btn')
   ?.addEventListener('click', async () => {
     const points = await invoke('calculate_curve', { settings });
-    
-    // Format the points as a LUT string (skip first point as in old_app.rs)
+
     const lut = points
-      .slice(1)  // Skip first point
+      .slice(1)
       .map(([x, y]) => `${x},${y.toFixed(4)}`)
       .join(';\n');
-    
-    // Copy to clipboard
+
     try {
       await navigator.clipboard.writeText(lut);
     } catch (err) {
@@ -195,7 +191,6 @@ function createTabSettings(tab) {
 function updateTabSettings(tab) {
   const tabSettings = settings[tab];
   const settingOrder = ['range', 'growth_base', 'max_sens'];
-  const animationDuration = 300;
   
   for (const key of settingOrder) {
     const value = tabSettings[key];
@@ -205,36 +200,14 @@ function updateTabSettings(tab) {
     const input = document.getElementById(`${tab}-${key}-input`);
     
     if (slider && input) {
-      const startValue = parseFloat(slider.value);
-      const endValue = value;
-      
-      animateValue(startValue, endValue, animationDuration, (current) => {
-        const formatted = key === 'range' ? Math.round(current) : current.toFixed(3);
-        slider.value = formatted;
-        input.value = formatted;
-      });
+      // Directly set values without animation
+      slider.value = key === 'range' ? Math.round(value) : value;
+      input.value = key === 'range' ? Math.round(value) : value;
     }
   }
 }
 
-function animateValue(start, end, duration, callback) {
-  const startTime = performance.now();
-  
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = start + (end - start) * eased;
-    
-    callback(current);
-    
-    if (progress < 1) {
-      requestAnimationFrame(update);
-    }
-  }
-  
-  requestAnimationFrame(update);
-}
+// Remove the animateValue function since it's no longer needed
 
 async function updatePlot() {
   const points = await invoke('calculate_curve', { settings });

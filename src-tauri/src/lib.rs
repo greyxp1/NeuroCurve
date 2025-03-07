@@ -21,21 +21,17 @@ impl Default for Settings {
             flicking: HashMap::new(),
         };
 
-        // Common settings
         settings.common.insert("dpi".to_string(), 1600.0);
         settings.common.insert("min_sens".to_string(), 0.150);
 
-        // Micro settings
         settings.micro.insert("range".to_string(), 20.0);
         settings.micro.insert("growth_base".to_string(), 1.5);
         settings.micro.insert("max_sens".to_string(), 0.4);
 
-        // Tracking settings
         settings.tracking.insert("range".to_string(), 40.0);
         settings.tracking.insert("growth_base".to_string(), 1.012);
         settings.tracking.insert("max_sens".to_string(), 1.2);
 
-        // Flicking settings
         settings.flicking.insert("range".to_string(), 30.0);
         settings.flicking.insert("growth_base".to_string(), 1.023);
         settings.flicking.insert("max_sens".to_string(), 2.5);
@@ -118,7 +114,6 @@ pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
         .collect()
 }
 
-// Define the commands in a separate module
 mod commands {
     use super::*;
 
@@ -142,8 +137,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|_app| {
-            // We don't need to apply any window-level effects
-            // The CSS backdrop-filter will handle the acrylic effect for panels
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
