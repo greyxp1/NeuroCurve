@@ -1,21 +1,3 @@
-let debugDragRegions = false;
-
-function toggleDragRegionsDebug() {
-  debugDragRegions = !debugDragRegions;
-  document.body.classList.toggle('debug-drag-regions', debugDragRegions);
-}
-
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-    toggleDragRegionsDebug();
-  }
-});
-
-document.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  return false;
-}, { capture: true });
-
 const { invoke } = window.__TAURI__.core;
 const { getCurrentWindow } = window.__TAURI__.window;
 const appWindow = getCurrentWindow();
@@ -30,54 +12,22 @@ document
   .getElementById('titlebar-close')
   ?.addEventListener('click', () => appWindow.close());
 
-document
-  .getElementById('reset-btn')
-  ?.addEventListener('click', async () => {
-    console.log('Reset button clicked');
-    settings = await invoke('get_default_settings');
-    updateUIFromSettings();
-    updatePlot();
-  });
-
-document
-  .getElementById('export-btn')
-  ?.addEventListener('click', async () => {
-    const points = await invoke('calculate_curve', { settings });
-
-    const lut = points
-      .slice(1)
-      .map(([x, y]) => `${x},${y.toFixed(4)}`)
-      .join(';\n');
-
-    try {
-      await navigator.clipboard.writeText(lut);
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
-  });
-
 let settings = null;
-let currentTab = 'micro';
-let isAnimating = false;
+let chart = null;
 
 async function initializeSettings() {
   settings = await invoke('get_default_settings');
   
-  createTabSettings('micro');
-  createTabSettings('tracking');
-  createTabSettings('flicking');
-  
+  createFlickingSettings();
   updateUIFromSettings();
   updatePlot();
   
   const dpiSlider = document.getElementById('dpi');
   const dpiInput = document.getElementById('dpi-value');
   
-  dpiSlider.addEventListener('input', (e) => {
-    dpiInput.value = e.target.value;
-    settings.common.dpi = parseFloat(e.target.value);
-    updatePlot();
-  });
+  dpiSlider.addEventListener('input', 
+    createSliderHandler(dpiSlider, dpiInput, 'common', 'dpi')
+  );
 
   dpiInput.addEventListener('change', (e) => {
     dpiSlider.value = e.target.value;
@@ -88,11 +38,9 @@ async function initializeSettings() {
   const minSensSlider = document.getElementById('min-sens');
   const minSensInput = document.getElementById('min-sens-value');
   
-  minSensSlider.addEventListener('input', (e) => {
-    minSensInput.value = e.target.value;
-    settings.common.min_sens = parseFloat(e.target.value);
-    updatePlot();
-  });
+  minSensSlider.addEventListener('input', 
+    createSliderHandler(minSensSlider, minSensInput, 'common', 'min_sens')
+  );
 
   minSensInput.addEventListener('change', (e) => {
     minSensSlider.value = e.target.value;
@@ -106,395 +54,319 @@ function updateUIFromSettings() {
   document.getElementById('dpi-value').value = settings.common.dpi;
   document.getElementById('min-sens').value = settings.common.min_sens;
   document.getElementById('min-sens-value').value = settings.common.min_sens;
+  document.getElementById('max-sens').value = settings.flicking.max_sens;
+  document.getElementById('max-sens-value').value = settings.flicking.max_sens;
 
-  updateTabSettings('micro');
-  updateTabSettings('tracking');
-  updateTabSettings('flicking');
+  updateFlickingSettings();
 }
 
-function createTabSettings(tab) {
-  const container = document.getElementById(`${tab}-settings`);
-  const settingOrder = ['range', 'growth_base', 'max_sens'];
+function createFlickingSettings() {
+  const container = document.getElementById('all-settings');
+  const settingOrder = ['range', 'growth_base'];
   const settingInfo = {
     'range': {
       label: 'Range',
-      tooltip: 'Speed threshold before increasing sensitivity\nHigher values mean the effect kicks in at faster movements',
-      step: 1,
+      tooltip: 'Speed range (in counts/ms) over which sensitivity increases',
       min: 0,
-      max: 100
+      max: 200,
+      step: 1
     },
     'growth_base': {
-      label: 'Rate',
-      tooltip: 'How quickly sensitivity increases\nHigher values mean more aggressive acceleration',
-      step: 0.01,
-      min: 1.01,
-      max: 1.5
-    },
-    'max_sens': {
-      label: 'Max',
-      tooltip: 'Maximum sensitivity multiplier\nLimits how high the sensitivity can go',
-      step: 0.001,
-      min: 0,
-      max: 10
+      label: 'Growth',
+      tooltip: 'How quickly sensitivity increases within the range (higher = faster growth)',
+      min: 1.001,
+      max: 1.5,
+      step: 0.001
     }
   };
+
+  const maxSensSlider = document.getElementById('max-sens');
+  const maxSensInput = document.getElementById('max-sens-value');
+  
+  maxSensSlider.addEventListener('input', 
+    createSliderHandler(maxSensSlider, maxSensInput, 'flicking', 'max_sens')
+  );
+
+  maxSensInput.addEventListener('change', (e) => {
+    maxSensSlider.value = e.target.value;
+    settings.flicking.max_sens = parseFloat(e.target.value);
+    updatePlot();
+  });
 
   for (const key of settingOrder) {
     const info = settingInfo[key];
     const row = document.createElement('div');
     row.className = 'setting-row';
-
-    const labelDiv = document.createElement('div');
-    labelDiv.className = 'setting-label';
-    labelDiv.setAttribute('data-tooltip', info.tooltip);
-    labelDiv.textContent = info.label;
-
+    
+    const label = document.createElement('div');
+    label.className = 'setting-label';
+    label.textContent = info.label;
+    label.setAttribute('data-tooltip', info.tooltip);
+    
     const slider = document.createElement('input');
     slider.type = 'range';
-    slider.id = `${tab}-${key}-slider`;
+    slider.id = `flicking-${key}-slider`;
     slider.className = 'setting-slider';
     slider.min = info.min;
     slider.max = info.max;
     slider.step = info.step;
-    slider.value = settings[tab][key];
-
+    
     const numberInput = document.createElement('input');
     numberInput.type = 'number';
-    numberInput.id = `${tab}-${key}-input`;
+    numberInput.id = `flicking-${key}-input`;
     numberInput.className = 'setting-value';
     numberInput.min = info.min;
     numberInput.max = info.max;
     numberInput.step = info.step;
-    numberInput.value = settings[tab][key];
-
-    row.appendChild(labelDiv);
+    
+    row.appendChild(label);
     row.appendChild(slider);
     row.appendChild(numberInput);
     container.appendChild(row);
-
-    slider.addEventListener('input', (e) => {
-      const newValue = key === 'range' ? Math.round(parseFloat(e.target.value)) : parseFloat(e.target.value);
-      numberInput.value = newValue;
-      settings[tab][key] = newValue;
-      updatePlot();
-    });
+    
+    slider.addEventListener('input', 
+      createSliderHandler(slider, numberInput, 'flicking', key)
+    );
 
     numberInput.addEventListener('change', (e) => {
-      const newValue = key === 'range' ? Math.round(parseFloat(e.target.value)) : parseFloat(e.target.value);
+      const newValue = key === 'range' 
+        ? Math.round(parseFloat(e.target.value)) 
+        : parseFloat(e.target.value);
       slider.value = newValue;
-      settings[tab][key] = newValue;
+      settings.flicking[key] = newValue;
       updatePlot();
     });
   }
 }
 
-function updateTabSettings(tab) {
-  const tabSettings = settings[tab];
+function updateFlickingSettings() {
   const settingOrder = ['range', 'growth_base', 'max_sens'];
   
   for (const key of settingOrder) {
-    const value = tabSettings[key];
+    const value = settings.flicking[key];
     if (value === undefined) continue;
 
-    const slider = document.getElementById(`${tab}-${key}-slider`);
-    const input = document.getElementById(`${tab}-${key}-input`);
+    const slider = document.getElementById(`flicking-${key}-slider`);
+    const input = document.getElementById(`flicking-${key}-input`);
     
     if (slider && input) {
-      // Directly set values without animation
       slider.value = key === 'range' ? Math.round(value) : value;
       input.value = key === 'range' ? Math.round(value) : value;
     }
   }
 }
 
-// Remove the animateValue function since it's no longer needed
-
 async function updatePlot() {
   const points = await invoke('calculate_curve', { settings });
   
-  const microEnd = Math.min(Math.round(settings.micro.range), points.length);
-  const trackingEnd = Math.min(Math.round(microEnd + settings.tracking.range), points.length);
+  const ctx = document.getElementById('sensitivity-plot');
   
-  const totalThreshold = Math.round(settings.micro.range + settings.tracking.range + settings.flicking.range);
-  const baseDisplayX = totalThreshold * points[1][0];
-  const displayX = Math.ceil(baseDisplayX * 1.2);
-
-  const microPoints = points.slice(0, microEnd + 1);
-  const trackingPoints = points.slice(microEnd, trackingEnd + 1);
-  const flickingPoints = points.slice(trackingEnd);
-
-  const traces = [];
-  
-  if (microPoints.length > 0) {
-    traces.push({
-      x: microPoints.map(p => p[0]),
-      y: microPoints.map(p => p[1]),
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Micro',
-      line: { color: '#3d8bff', width: 3.5 },
-      hoverinfo: 'none'
+  if (!chart) {
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: points.map(p => p[0].toFixed(1)),
+        datasets: [{
+          data: points.map(p => p[1]),
+          borderColor: '#4d9fff',
+          borderWidth: 3.5,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: createChartOptions()
+    });
+  } else {
+    chart.data.labels = points.map(p => p[0].toFixed(1));
+    chart.data.datasets[0].data = points.map(p => p[1]);
+    chart.update({
+      duration: 300,
+      easing: 'easeOutQuart'
     });
   }
-
-  if (trackingPoints.length > 0) {
-    traces.push({
-      x: trackingPoints.map(p => p[0]),
-      y: trackingPoints.map(p => p[1]),
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Tracking',
-      line: { color: '#ff9900', width: 3.5 },
-      hoverinfo: 'none'
-    });
-  }
-
-  if (flickingPoints.length > 0) {
-    traces.push({
-      x: flickingPoints.map(p => p[0]),
-      y: flickingPoints.map(p => p[1]),
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Flicking',
-      line: { color: '#33cc33', width: 3.5 },
-      hoverinfo: 'none'
-    });
-  }
-
-  const visiblePoints = points.filter(p => p[0] <= displayX);
-  const maxY = visiblePoints.length > 0 ? Math.max(...visiblePoints.map(p => p[1])) : 1;
-
-  const layout = {
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    autosize: true,
-    useResizeHandler: true,
-    responsive: true,
-    margin: { l: 50, r: 30, b: 50, t: 10, pad: 0 },
-    xaxis: {
-      title: 'Input Speed (counts/ms)',
-      range: [0, displayX],
-      gridcolor: '#222',
-      zerolinecolor: '#444',
-      tickfont: { color: '#888' },
-      titlefont: { color: '#888' },
-      fixedrange: true
-    },
-    yaxis: {
-      title: 'Sensitivity Multiplier',
-      range: [0, maxY * 1.1],
-      gridcolor: '#222',
-      zerolinecolor: '#444',
-      tickfont: { color: '#888' },
-      titlefont: { color: '#888' },
-      fixedrange: true
-    },
-    showlegend: true,
-    legend: {
-      x: 0,
-      y: 1,
-      traceorder: 'normal',
-      font: { color: '#888' },
-      bgcolor: 'rgba(0,0,0,0)'
-    },
-    dragmode: false,
-    hovermode: false
-  };
-
-  const config = {
-    displayModeBar: false,
-    responsive: true,
-    staticPlot: true
-  };
-
-  const plotElement = document.getElementById('sensitivity-plot');
-  Plotly.newPlot('sensitivity-plot', traces, layout, config).then(() => {
-    Plotly.Plots.resize(plotElement);
-  });
 }
 
-let resizeTimeout;
-const plotElement = document.getElementById('sensitivity-plot');
+function createChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 300,
+      easing: 'easeOutQuart'
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: false
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: '#222',
+        },
+        border: {
+          color: '#444'
+        },
+        ticks: {
+          color: '#888',
+          maxRotation: 0,
+          callback: function(value) {
+            return Math.round(value);
+          }
+        },
+        title: {
+          display: true,
+          text: 'Input Speed (counts/ms)',
+          color: '#888',
+          font: {
+            size: 12
+          }
+        }
+      },
+      y: {
+        grid: {
+          color: '#222',
+        },
+        border: {
+          color: '#444'
+        },
+        ticks: {
+          color: '#888'
+        },
+        title: {
+          display: true,
+          text: 'Sensitivity Multiplier',
+          color: '#888',
+          font: {
+            size: 12
+          }
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  };
+}
 
-if (plotElement) {
-    const debounceResize = () => {
-        if (resizeTimeout) {
-            clearTimeout(resizeTimeout);
+function createSliderHandler(slider, input, settingType, settingKey) {
+  let animationFrame;
+  
+  return (e) => {
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+    }
+    
+    animationFrame = requestAnimationFrame(() => {
+      const newValue = settingKey === 'range' 
+        ? Math.round(parseFloat(e.target.value)) 
+        : parseFloat(e.target.value);
+        
+      input.value = newValue;
+      settings[settingType][settingKey] = newValue;
+      updatePlot();
+    });
+  };
+}
+
+function initializeTooltips() {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'floating-tooltip';
+  document.body.appendChild(tooltip);
+
+  let tooltipTimeout = null;
+  const TOOLTIP_DELAY = 400;
+
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target;
+    if (target.hasAttribute('data-tooltip')) {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+      }
+
+      tooltipTimeout = setTimeout(() => {
+        const tooltipText = target.getAttribute('data-tooltip');
+        tooltip.textContent = tooltipText;
+        
+        const targetRect = target.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        
+        let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+        let top = targetRect.top - tooltipRect.height - 8;
+        
+        const viewportWidth = window.innerWidth;
+        
+        if (left < 8) {
+          left = 8;
+        } else if (left + tooltipRect.width > viewportWidth - 8) {
+          left = viewportWidth - tooltipRect.width - 8;
         }
         
-        requestAnimationFrame(() => {
-            const container = plotElement.parentElement;
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            
-            if (plotElement._prevWidth !== width || plotElement._prevHeight !== height) {
-                plotElement._prevWidth = width;
-                plotElement._prevHeight = height;
-                
-                Plotly.relayout(plotElement, {
-                    width: width,
-                    height: height,
-                    'plot_bgcolor': 'transparent',
-                    'paper_bgcolor': 'transparent'
-                });
-            }
-        });
+        if (top < 8) {
+          top = targetRect.bottom + 8;
+        }
         
-        resizeTimeout = setTimeout(() => {
-            updatePlot();
-        }, 150);
-    };
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+        
+        tooltip.classList.add('visible');
+      }, TOOLTIP_DELAY);
+    }
+  });
 
-    const resizeObserver = new ResizeObserver((entries) => {
-        if (!entries[0]) return;
-        debounceResize();
-    });
+  document.addEventListener('mouseout', (e) => {
+    const target = e.target;
+    if (target.hasAttribute('data-tooltip')) {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = null;
+      }
+      tooltip.classList.remove('visible');
+    }
+  });
 
-    resizeObserver.observe(plotElement.parentElement);
+  document.addEventListener('scroll', () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = null;
+    }
+    tooltip.classList.remove('visible');
+  }, true);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initializeSettings();
-  
-  document.querySelectorAll('.tab-btn').forEach(button => {
-    button.addEventListener('click', async () => {
-      if (isAnimating) return;
-      
-      const newTab = button.dataset.tab;
-      if (currentTab === newTab) return;
-      
-      isAnimating = true;
-      
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
-      
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      document.getElementById(`${newTab}-settings`).classList.add('active');
-      
-      document.body.className = `${newTab}-tab`;
-      
-      const settingKeys = ['range', 'growth_base', 'max_sens'];
-      const startValues = {};
-      const endValues = settings[newTab];
-      
-      settingKeys.forEach(key => {
-        const slider = document.getElementById(`${currentTab}-${key}-slider`);
-        startValues[key] = parseFloat(slider.value);
-      });
-      
-      const duration = 300;
-      const frames = 30;
-      const interval = duration / frames;
-      
-      for (let frame = 0; frame <= frames; frame++) {
-        const progress = frame / frames;
-        const eased = 1 - Math.pow(1 - progress, 3);
-        
-        settingKeys.forEach(key => {
-          const slider = document.getElementById(`${newTab}-${key}-slider`);
-          const input = document.getElementById(`${newTab}-${key}-input`);
-          
-          if (slider && input) {
-            const start = startValues[key];
-            const end = endValues[key];
-            const current = start + (end - start) * eased;
-            const formatted = key === 'range' ? Math.round(current) : current.toFixed(3);
-            
-            slider.value = formatted;
-            input.value = formatted;
-          }
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, interval));
-      }
-      
-      settingKeys.forEach(key => {
-        const slider = document.getElementById(`${newTab}-${key}-slider`);
-        const input = document.getElementById(`${newTab}-${key}-input`);
-        if (slider && input) {
-          const formatted = key === 'range' ? Math.round(endValues[key]) : endValues[key].toFixed(3);
-          slider.value = formatted;
-          input.value = formatted;
-        }
-      });
-      
-      currentTab = newTab;
-      isAnimating = false;
-      updatePlot();
-    });
-  });
-
-  document.getElementById('reset-btn').addEventListener('click', async () => {
-    settings = await invoke('get_default_settings');
-    updateUIFromSettings();
-    updatePlot();
-  });
-
-  document.getElementById('export-btn').addEventListener('click', async () => {
-    const points = await invoke('calculate_curve', { settings });
-  });
+  initializeTooltips();
 });
 
-let tooltipElement = null;
-let tooltipTimeout = null;
-const TOOLTIP_DELAY = 400;
-
-function createTooltip() {
-  tooltipElement = document.createElement('div');
-  tooltipElement.className = 'floating-tooltip';
-  document.body.appendChild(tooltipElement);
-}
-
-function showTooltip(event) {
-  const target = event.target;
-  const tooltip = target.getAttribute('data-tooltip');
-  if (!tooltip) return;
-
-  if (!tooltipElement) {
-    createTooltip();
-  }
-
-  tooltipElement.textContent = tooltip;
-  tooltipElement.style.display = 'block';
-
-  const rect = target.getBoundingClientRect();
-  const tooltipRect = tooltipElement.getBoundingClientRect();
-  
-  let x = rect.left + (rect.width - tooltipRect.width) / 2;
-  let y = rect.top - tooltipRect.height - 8;
-
-  x = Math.max(8, Math.min(x, window.innerWidth - tooltipRect.width - 8));
-  y = Math.max(8, Math.min(y, window.innerHeight - tooltipRect.height - 8));
-
-  tooltipElement.style.left = `${x}px`;
-  tooltipElement.style.top = `${y}px`;
-}
-
-function hideTooltip() {
-  if (tooltipTimeout) {
-    clearTimeout(tooltipTimeout);
-    tooltipTimeout = null;
-  }
-  if (tooltipElement) {
-    tooltipElement.style.display = 'none';
-  }
-}
-
-document.addEventListener('mouseover', (e) => {
-  if (e.target.hasAttribute('data-tooltip')) {
-    if (tooltipTimeout) clearTimeout(tooltipTimeout);
-    tooltipTimeout = setTimeout(() => showTooltip(e), TOOLTIP_DELAY);
+window.addEventListener('beforeunload', () => {
+  if (chart) {
+    chart.destroy();
   }
 });
 
-document.addEventListener('mouseout', (e) => {
-  if (e.target.hasAttribute('data-tooltip')) {
-    hideTooltip();
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  settings = await invoke('get_default_settings');
+  updateUIFromSettings();
+  updatePlot();
+});
+
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const points = await invoke('calculate_curve', { settings });
+  const lut = points
+    .slice(1)
+    .map(([x, y]) => `${x},${y.toFixed(4)}`)
+    .join(';\n');
+
+  try {
+    await navigator.clipboard.writeText(lut);
+  } catch (err) {
+    console.error('Failed to copy to clipboard:', err);
   }
 });
 
-document.addEventListener('mousemove', (e) => {
-  if (e.target.hasAttribute('data-tooltip') && tooltipElement?.style.display === 'block') {
-    showTooltip(e);
-  }
-});
+initializeSettings();
