@@ -232,7 +232,8 @@ async function updatePlot() {
       type: 'scatter',
       mode: 'lines',
       name: 'Micro',
-      line: { color: '#3d8bff', width: 3.5 }
+      line: { color: '#3d8bff', width: 3.5 },
+      hoverinfo: 'none'
     });
   }
 
@@ -243,7 +244,8 @@ async function updatePlot() {
       type: 'scatter',
       mode: 'lines',
       name: 'Tracking',
-      line: { color: '#ff9900', width: 3.5 }
+      line: { color: '#ff9900', width: 3.5 },
+      hoverinfo: 'none'
     });
   }
 
@@ -254,7 +256,8 @@ async function updatePlot() {
       type: 'scatter',
       mode: 'lines',
       name: 'Flicking',
-      line: { color: '#33cc33', width: 3.5 }
+      line: { color: '#33cc33', width: 3.5 },
+      hoverinfo: 'none'
     });
   }
 
@@ -274,7 +277,8 @@ async function updatePlot() {
       gridcolor: '#222',
       zerolinecolor: '#444',
       tickfont: { color: '#888' },
-      titlefont: { color: '#888' }
+      titlefont: { color: '#888' },
+      fixedrange: true
     },
     yaxis: {
       title: 'Sensitivity Multiplier',
@@ -282,7 +286,8 @@ async function updatePlot() {
       gridcolor: '#222',
       zerolinecolor: '#444',
       tickfont: { color: '#888' },
-      titlefont: { color: '#888' }
+      titlefont: { color: '#888' },
+      fixedrange: true
     },
     showlegend: true,
     legend: {
@@ -291,12 +296,15 @@ async function updatePlot() {
       traceorder: 'normal',
       font: { color: '#888' },
       bgcolor: 'rgba(0,0,0,0)'
-    }
+    },
+    dragmode: false,
+    hovermode: false
   };
 
   const config = {
     displayModeBar: false,
-    responsive: true
+    responsive: true,
+    staticPlot: true
   };
 
   const plotElement = document.getElementById('sensitivity-plot');

@@ -22,19 +22,19 @@ impl Default for Settings {
         };
 
         settings.common.insert("dpi".to_string(), 1600.0);
-        settings.common.insert("min_sens".to_string(), 0.150);
+        settings.common.insert("min_sens".to_string(), 0.16);
 
-        settings.micro.insert("range".to_string(), 20.0);
-        settings.micro.insert("growth_base".to_string(), 1.5);
-        settings.micro.insert("max_sens".to_string(), 0.4);
+        settings.micro.insert("range".to_string(), 10.0);
+        settings.micro.insert("growth_base".to_string(), 1.01);
+        settings.micro.insert("max_sens".to_string(), 0.16);
 
-        settings.tracking.insert("range".to_string(), 40.0);
-        settings.tracking.insert("growth_base".to_string(), 1.012);
-        settings.tracking.insert("max_sens".to_string(), 1.2);
+        settings.tracking.insert("range".to_string(), 30.0);
+        settings.tracking.insert("growth_base".to_string(), 1.15);
+        settings.tracking.insert("max_sens".to_string(), 0.6);
 
-        settings.flicking.insert("range".to_string(), 30.0);
-        settings.flicking.insert("growth_base".to_string(), 1.023);
-        settings.flicking.insert("max_sens".to_string(), 2.5);
+        settings.flicking.insert("range".to_string(), 20.0);
+        settings.flicking.insert("growth_base".to_string(), 1.1);
+        settings.flicking.insert("max_sens".to_string(), 3.0);
 
         settings
     }
