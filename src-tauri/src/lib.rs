@@ -3,97 +3,76 @@ use std::collections::HashMap;
 use tauri;
 
 const INPUT_RANGE: usize = 257;
+const DEFAULT_DPI: f64 = 1600.0;
+const DEFAULT_SETTINGS: [(&str, f64); 5] = [
+    ("dpi", 1600.0),
+    ("min_vel", 0.2),
+    ("max_vel", 2.0),
+    ("range", 60.0),
+    ("growth_base", 1.06),
+];
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Settings {
-    pub common: HashMap<String, f64>,
-    pub flicking: HashMap<String, f64>,
-}
+pub struct Settings { pub values: HashMap<String, f64> }
 
 impl Default for Settings {
     fn default() -> Self {
-        let mut settings = Settings {
-            common: HashMap::new(),
-            flicking: HashMap::new(),
-        };
-
-        settings.common.insert("dpi".to_string(), 1600.0);
-        settings.common.insert("min_sens".to_string(), 0.2);
-        settings.flicking.insert("max_sens".to_string(), 1.8);
-        settings.flicking.insert("range".to_string(), 60.0);
-        settings.flicking.insert("growth_base".to_string(), 1.06);
+        let mut settings = Settings { values: HashMap::with_capacity(5) };
+        for (key, value) in DEFAULT_SETTINGS.iter() {
+            settings.values.insert(key.to_string(), *value);
+        }
         settings
     }
 }
 
-fn generate_segment(n: usize, base: f64, range: f64, start: f64, end: f64, plateau: bool) -> Vec<f64> {
+#[inline(always)]
+pub fn get_default_settings() -> Settings { Settings::default() }
+
+fn generate_velocity_curve(n: usize, base: f64, range: f64, start_vel: f64, end_vel: f64, plateau: bool) -> Vec<f64> {
     if n == 0 { return Vec::new(); }
-    
-    let plateau_len = (plateau && (n as f64) > range)
-        .then_some(n.saturating_sub(range as usize))
-        .unwrap_or(0);
-    let expo_len = n.saturating_sub(plateau_len);
-    
+    let range_usize = range.ceil() as usize;
+    let expo_len = if plateau && n > range_usize { range_usize } else { n };
     let mut result = Vec::with_capacity(n);
+    if base <= 1.0 || range <= 0.0 { return vec![0.0; n]; }
     let base_factor = 1.0 / (base.powf(range) - 1.0);
-    result.extend((0..expo_len).map(|i| {
-        start + (end - start) * (base.powf(i as f64) - 1.0) * base_factor
-    }));
-    result.extend(std::iter::repeat(end).take(plateau_len));
+    let vel_diff = end_vel - start_vel;
+    for i in 0..expo_len {
+        let input_speed = i as f64;
+        let exp_term = (base.powf(input_speed) - 1.0).max(0.0);
+        let velocity_multiplier = start_vel + vel_diff * exp_term * base_factor;
+        result.push((input_speed * velocity_multiplier).max(0.0));
+    }
+    if plateau && n > expo_len && expo_len > 0 {
+        let last_velocity = result[expo_len - 1];
+        let velocity_ratio = if expo_len > 1 { last_velocity / ((expo_len - 1) as f64) } else { last_velocity };
+        result.extend((expo_len..n).map(|i| (i as f64 * velocity_ratio).max(0.0)));
+    }
     result
 }
 
-pub fn get_default_settings() -> Settings {
-    Settings::default()
-}
-
 pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
-    let total = INPUT_RANGE;
-    let dpi_scale = *settings.common.get("dpi").unwrap_or(&1600.0) / 1600.0;
-    let min_sens = *settings.common.get("min_sens").unwrap_or(&0.15);
-    let range = *settings.flicking.get("range").unwrap_or(&60.0);
-    
-    let mut full = Vec::with_capacity(total);
-
-    let segment = generate_segment(
-        total,
-        *settings.flicking.get("growth_base").unwrap_or(&1.05),
-        range,
-        min_sens,
-        *settings.flicking.get("max_sens").unwrap_or(&2.0),
-        true
-    );
-    
-    full.extend(segment);
-    full.truncate(total);
-
-    let display_limit = ((range as usize) + 10).min(total);
-    (0..display_limit)
-        .map(|i| (i as f64 * dpi_scale, full[i] * dpi_scale))
-        .collect()
+    let dpi_scale = settings.values.get("dpi").copied().unwrap_or(DEFAULT_DPI) / DEFAULT_DPI;
+    let min_vel = settings.values.get("min_vel").copied().unwrap_or(0.2);
+    let max_vel = settings.values.get("max_vel").copied().unwrap_or(2.0);
+    let range = settings.values.get("range").copied().unwrap_or(60.0);
+    let growth_base = settings.values.get("growth_base").copied().unwrap_or(1.06);
+    let display_limit = (range.ceil() as usize).min(INPUT_RANGE);
+    let segment = generate_velocity_curve(INPUT_RANGE, growth_base, range, min_vel, max_vel, true);
+    Vec::from_iter((0..display_limit).map(|i| (i as f64 * dpi_scale, segment[i])))
 }
 
 mod commands {
     use super::*;
-
-    #[tauri::command]
-    pub fn get_default_settings() -> Settings {
-        super::get_default_settings()
-    }
-
-    #[tauri::command]
-    pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
-        super::calculate_curve(settings)
-    }
+    #[tauri::command] 
+    pub fn get_default_settings() -> Settings { super::get_default_settings() }
+    #[tauri::command] 
+    pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> { super::calculate_curve(settings) }
 }
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
-            commands::get_default_settings,
-            commands::calculate_curve,
-        ])
+        .invoke_handler(tauri::generate_handler![commands::get_default_settings, commands::calculate_curve])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

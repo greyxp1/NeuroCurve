@@ -10,53 +10,7 @@
     <script type="module" src="/main.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-
   <body>
-    <div class="container" data-tauri-drag-region>
-      <div class="settings-panel">
-        <div class="panel-header">
-          <h2>Settings</h2>
-        </div>
-
-        <div class="settings-container">
-          <div id="all-settings">
-            <div class="setting-row">
-              <div class="setting-label" data-tooltip="Mouse DPI (Dots Per Inch)">DPI</div>
-              <input type="range" id="dpi" class="setting-slider" min="400" max="6400" step="50" />
-              <input type="number" id="dpi-value" class="setting-value" min="400" max="6400" />
-            </div>
-            <div class="setting-row">
-              <div class="setting-label" data-tooltip="Minimum sensitivity multiplier applied at low speeds">Min</div>
-              <input type="range" id="min-sens" class="setting-slider" min="0" max="1" step="0.001" />
-              <input type="number" id="min-sens-value" class="setting-value" min="0" max="1" step="0.001" />
-            </div>
-            <div class="setting-row">
-              <div class="setting-label" data-tooltip="Maximum sensitivity multiplier applied at high speeds">Max</div>
-              <input type="range" id="max-sens" class="setting-slider" min="0.1" max="5" step="0.1" />
-              <input type="number" id="max-sens-value" class="setting-value" min="0.1" max="5" step="0.1" />
-            </div>
-          </div>
-        </div>
-
-        <div class="action-buttons">
-          <button id="reset-btn">Reset</button>
-          <button id="export-btn">Export LUT</button>
-        </div>
-      </div>
-
-      <div class="plot-panel">
-        <div class="window-controls">
-          <button class="titlebar-button" id="titlebar-minimize"></button>
-          <button class="titlebar-button" id="titlebar-maximize"></button>
-          <button class="titlebar-button" id="titlebar-close"></button>
-        </div>
-        <div class="panel-header">
-          <h2>Sensitivity Curve</h2>
-        </div>
-        <div id="sensitivity-plot-container">
-          <canvas id="sensitivity-plot"></canvas>
-        </div>
-      </div>
-    </div>
+    <div class="container" data-tauri-drag-region></div>
   </body>
 </html>
