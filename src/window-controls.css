@@ -49,11 +49,11 @@
   font-family: system-ui, -apple-system, Arial, sans-serif;
   font-weight: 500;
   line-height: 1;
-  transform: translate(-50%, -52%) scale(0);
+  transform: translate(-50%, -55%) scale(0);
 }
 
 #titlebar-close:hover::before {
-  transform: translate(-50%, -52%) scale(1);
+  transform: translate(-50%, -55%) scale(1);
 }
 
 #titlebar-minimize {

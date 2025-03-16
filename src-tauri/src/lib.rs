@@ -18,12 +18,10 @@ impl Default for Settings {
         };
 
         settings.common.insert("dpi".to_string(), 1600.0);
-        settings.common.insert("min_sens".to_string(), 0.16);
-
+        settings.common.insert("min_sens".to_string(), 0.2);
+        settings.flicking.insert("max_sens".to_string(), 1.8);
         settings.flicking.insert("range".to_string(), 60.0);
-        settings.flicking.insert("growth_base".to_string(), 1.05);
-        settings.flicking.insert("max_sens".to_string(), 2.0);
-
+        settings.flicking.insert("growth_base".to_string(), 1.06);
         settings
     }
 }
