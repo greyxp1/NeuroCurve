@@ -39,7 +39,8 @@ const cfg = {
                         font: { size: 11, family: 'Inter' },
                         maxRotation: 0,
                         padding: 10,
-                        callback: v => parseFloat(v)
+                        callback: v => parseFloat(v),
+                        maxTicksLimit: 10
                     },
                     title: {
                         display: true,
@@ -60,11 +61,11 @@ const cfg = {
                         color: 'rgba(255, 255, 255, 0.4)',
                         font: { size: 11, family: 'Inter' },
                         padding: 10,
-                        callback: v => parseFloat(v)
+                        callback: v => parseFloat(v).toFixed(2)
                     },
                     title: {
                         display: true,
-                        text: 'Output Speed (counts/ms)',
+                        text: 'Sensitivity Multiplier',
                         color: 'rgba(255, 255, 255, 0.6)',
                         font: { size: 12, family: 'Inter', weight: '500' },
                         padding: { bottom: 15 }
@@ -75,10 +76,41 @@ const cfg = {
         }
     },
     settings: {
-        min_vel: { label: 'Min', tooltip: 'Minimum velocity multiplier', min: .01, max: 2, step: .01 },
-        max_vel: { label: 'Max', tooltip: 'Maximum velocity multiplier', min: .01, max: 10, step: .01 },
-        range: { label: 'Range', tooltip: 'Speed range (in counts/ms) over which sensitivity increases', min: 10, max: 200, step: 1 },
-        growth_base: { label: 'Growth', tooltip: 'How quickly sensitivity increases within the range', min: 1, max: 1.5, step: .01 }
+        min_sens: { 
+            label: 'Min', 
+            tooltip: 'Minimum sensitivity multiplier', 
+            min: 0.1, 
+            max: 2, 
+            step: .05 
+        },
+        max_sens: { 
+            label: 'Max', 
+            tooltip: 'Maximum sensitivity multiplier (plateau)', 
+            min: 0.1, 
+            max: 5, 
+            step: .05 
+        },
+        offset: { 
+            label: 'Offset', 
+            tooltip: 'Speed threshold (in counts/ms) before acceleration begins', 
+            min: 0, 
+            max: 50, 
+            step: 1 
+        },
+        range: { 
+            label: 'Range', 
+            tooltip: 'Speed range (in counts/ms) over which sensitivity increases after offset', 
+            min: 10, 
+            max: 200, 
+            step: 1 
+        },
+        growth_base: { 
+            label: 'Growth', 
+            tooltip: 'How quickly sensitivity increases within the range', 
+            min: 1, 
+            max: 1.5, 
+            step: .01 
+        }
     }
 };
 
@@ -96,7 +128,7 @@ const createUI = () => {
             <div class="window-controls">
                 ${['minimize', 'maximize', 'close'].map(a => `<button class="titlebar-button" id="titlebar-${a}"></button>`).join('')}
             </div>
-            <div class="panel-header"><h2>Velocity Curve</h2></div>
+            <div class="panel-header"><h2>Sensitivity Curve</h2></div>
             <div id="sensitivity-plot-container">
                 <canvas id="sensitivity-plot"></canvas>
             </div>

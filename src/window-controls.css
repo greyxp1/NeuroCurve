@@ -18,12 +18,10 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base colors */
 #titlebar-close { background: #ff5f57; }
 #titlebar-minimize { background: #ffbd2e; }
 #titlebar-maximize { background: #28c940; }
 
-/* Hover states */
 #titlebar-close:hover { 
   background: #ff6e67;
   box-shadow: 0 0 6px rgba(255, 95, 87, 0.6);
@@ -39,12 +37,10 @@
   box-shadow: 0 0 6px rgba(40, 201, 64, 0.6);
 }
 
-/* Active states */
 #titlebar-close:active { background: #ff4b42; }
 #titlebar-minimize:active { background: #ffb224; }
 #titlebar-maximize:active { background: #23b939; }
 
-/* Apply hover scale to all buttons */
 .titlebar-button:hover {
   transform: scale(1.12);
 }
