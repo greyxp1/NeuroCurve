@@ -3,114 +3,48 @@
   top: 16px;
   right: 16px;
   display: flex;
-  gap: 12px;
+  gap: 6px;
   z-index: 1000;
 }
 
 .titlebar-button {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
   border: none;
   padding: 0;
   outline: none;
-}
-
-.titlebar-button::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  will-change: transform, opacity;
-  pointer-events: none;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.titlebar-button:hover::before {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 0.7;
-}
-
-#titlebar-close {
-  background: #ff5f57;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#titlebar-close::before {
-  content: '×';
-  color: rgba(0, 0, 0, 0.85);
-  font-size: 14px;
-  font-family: system-ui, -apple-system, Arial, sans-serif;
-  font-weight: 500;
-  line-height: 1;
-  transform: translate(-50%, -55%) scale(0);
-}
+/* Base colors */
+#titlebar-close { background: #ff5f57; }
+#titlebar-minimize { background: #ffbd2e; }
+#titlebar-maximize { background: #28c940; }
 
-#titlebar-close:hover::before {
-  transform: translate(-50%, -55%) scale(1);
-}
-
-#titlebar-minimize {
-  background: #ffbd2e;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#titlebar-minimize::before {
-  width: 8px;
-  height: 1px;
-  background: rgba(0, 0, 0, 0.85);
-}
-
-#titlebar-maximize {
-  background: #28c940;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#titlebar-maximize::before {
-  width: 6px;
-  height: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.85);
-  border-radius: 1px;
-}
-
-#titlebar-close:hover {
+/* Hover states */
+#titlebar-close:hover { 
   background: #ff6e67;
-  transform: scale(1.12);
-  box-shadow: 0 0 8px rgba(255, 95, 87, 0.8);
+  box-shadow: 0 0 6px rgba(255, 95, 87, 0.6);
 }
 
 #titlebar-minimize:hover {
   background: #ffca43;
-  transform: scale(1.12);
-  box-shadow: 0 0 8px rgba(255, 189, 46, 0.8);
+  box-shadow: 0 0 6px rgba(255, 189, 46, 0.6);
 }
 
 #titlebar-maximize:hover {
   background: #2fd948;
+  box-shadow: 0 0 6px rgba(40, 201, 64, 0.6);
+}
+
+/* Active states */
+#titlebar-close:active { background: #ff4b42; }
+#titlebar-minimize:active { background: #ffb224; }
+#titlebar-maximize:active { background: #23b939; }
+
+/* Apply hover scale to all buttons */
+.titlebar-button:hover {
   transform: scale(1.12);
-  box-shadow: 0 0 8px rgba(40, 201, 64, 0.8);
-}
-
-#titlebar-close:active {
-  background: #ff4b42;
-  transform: scale(0.95);
-  box-shadow: 0 0 12px rgba(255, 95, 87, 1);
-}
-
-#titlebar-minimize:active {
-  background: #ffb224;
-  transform: scale(0.95);
-  box-shadow: 0 0 12px rgba(255, 189, 46, 1);
-}
-
-#titlebar-maximize:active {
-  background: #23b939;
-  transform: scale(0.95);
-  box-shadow: 0 0 12px rgba(40, 201, 64, 1);
 }

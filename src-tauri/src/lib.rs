@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tauri;
 
 const INPUT_RANGE: usize = 257;
-const DEFAULT_SETTINGS: [(&str, f64); 4] = [("min_vel", 0.2), ("max_vel", 2.0), ("range", 60.0), ("growth_base", 1.06)];
+const DEFAULT_SETTINGS: [(&str, f64); 4] = [("min_vel", 0.2), ("max_vel", 2.0), ("range", 60.0), ("growth_base", 1.07)];
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings { pub values: HashMap<String, f64> }
@@ -15,14 +15,29 @@ impl Default for Settings {
 #[inline(always)]
 pub fn get_default_settings() -> Settings { Settings::default() }
 
-fn generate_velocity_curve(n: usize, base: f64, range: f64, start_vel: f64, end_vel: f64, plateau: bool) -> Vec<f64> {
-    if n == 0 || base <= 1.0 || range <= 0.0 { return vec![0.0; n]; }
+fn generate_velocity_curve(n: usize, growth_base: f64, range: f64, min_vel: f64, max_vel: f64, plateau: bool) -> Vec<f64> {
+    if n == 0 || range <= 0.0 { return vec![0.0; n]; }
+    
+    if growth_base <= 1.0 {
+        let range_usize = range.ceil() as usize;
+        let expo_len = if plateau && n > range_usize { range_usize } else { n };
+        let vel_diff = max_vel - min_vel;
+        let mut result: Vec<f64> = (0..expo_len)
+            .map(|i| min_vel + (vel_diff * (i as f64 / range)).max(0.0))
+            .collect();
+        
+        if plateau && n > expo_len && expo_len > 0 {
+            result.extend(std::iter::repeat(max_vel).take(n - expo_len));
+        }
+        return result;
+    }
+
     let range_usize = range.ceil() as usize;
     let expo_len = if plateau && n > range_usize { range_usize } else { n };
-    let base_factor = 1.0 / (base.powf(range) - 1.0);
-    let vel_diff = end_vel - start_vel;
+    let base_factor = 1.0 / (growth_base.powf(range) - 1.0);
+    let vel_diff = max_vel - min_vel;
     let mut result: Vec<f64> = (0..expo_len)
-        .map(|i| (i as f64 * (start_vel + vel_diff * (base.powf(i as f64) - 1.0).max(0.0) * base_factor)).max(0.0))
+        .map(|i| (i as f64 * (min_vel + vel_diff * (growth_base.powf(i as f64) - 1.0).max(0.0) * base_factor)).max(0.0))
         .collect();
     if plateau && n > expo_len && expo_len > 0 {
         let velocity_ratio = if expo_len > 1 { result[expo_len - 1] / ((expo_len - 1) as f64) } else { result[expo_len - 1] };
