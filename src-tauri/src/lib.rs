@@ -1,15 +1,40 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use tauri;
+use tauri::Manager;
+use window_vibrancy::apply_acrylic;
 
 const INPUT_RANGE: usize = 257;
-const DEFAULT_SETTINGS: [(&str, f64); 5] = [("min_sens", 0.2), ("max_sens", 3.0), ("range", 65.0), ("growth_base", 1.05), ("offset", 5.0)];
+
+struct Defaults;
+impl Defaults {
+    const MIN_SENS: f64 = 0.385;
+    const MAX_SENS: f64 = 3.0;
+    const RANGE: f64 = 40.0;
+    const GROWTH_BASE: f64 = 1.05;
+    const OFFSET: f64 = 8.0;
+    
+    const ALL: [(&'static str, f64); 5] = [
+        ("min_sens", Self::MIN_SENS),
+        ("max_sens", Self::MAX_SENS),
+        ("range", Self::RANGE),
+        ("growth_base", Self::GROWTH_BASE),
+        ("offset", Self::OFFSET),
+    ];
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings { pub values: HashMap<String, f64> }
 
 impl Default for Settings {
-    fn default() -> Self { Settings { values: DEFAULT_SETTINGS.iter().map(|(k, v)| (k.to_string(), *v)).collect() } }
+    fn default() -> Self { 
+        Settings { 
+            values: Defaults::ALL
+                .iter()
+                .map(|(k, v)| (k.to_string(), *v))
+                .collect() 
+        } 
+    }
 }
 
 #[inline(always)]
@@ -47,19 +72,27 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
 }
 
 pub fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
-    let get_val = |key, default| settings.values.get(key).copied().unwrap_or(default);
-    let range = get_val("range", 60.0);
-    let offset = get_val("offset", 0.0);
+    let get_val = |key| settings.values.get(key).copied().unwrap_or_else(|| {
+        Defaults::ALL.iter()
+            .find(|(k, _)| *k == key)
+            .map(|(_, v)| *v)
+            .unwrap_or(0.0)
+    });
+
+    let range = get_val("range");
+    let offset = get_val("offset");
     let display_limit = ((range + offset + 10.0).ceil() as usize).min(INPUT_RANGE);
+    
     let segment = generate_sensitivity_curve(
         INPUT_RANGE,
-        get_val("growth_base", 1.07),
+        get_val("growth_base"),
         range,
-        get_val("min_sens", 0.8),
-        get_val("max_sens", 2.0),
+        get_val("min_sens"),
+        get_val("max_sens"),
         offset,
         true
     );
+    
     (0..display_limit).map(|i| (i as f64, segment[i])).collect()
 }
 
@@ -72,6 +105,13 @@ mod commands {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            #[cfg(target_os = "windows")]
+            apply_acrylic(&window, Some((18, 18, 18, 125)))
+                .expect("Failed to apply acrylic effect");
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![commands::get_default_settings, commands::calculate_curve])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

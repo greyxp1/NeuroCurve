@@ -77,36 +77,36 @@ const cfg = {
     },
     settings: {
         min_sens: { 
-            label: 'Min', 
-            tooltip: 'Minimum sensitivity multiplier', 
+            label: 'Base Sensitivity', 
+            tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', 
             min: 0.1, 
             max: 2, 
-            step: .05 
+            step: 0.001 
         },
         max_sens: { 
-            label: 'Max', 
-            tooltip: 'Maximum sensitivity multiplier (plateau)', 
+            label: 'Maximum Sensitivity', 
+            tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', 
             min: 0.1, 
             max: 5, 
             step: .05 
         },
         offset: { 
-            label: 'Offset', 
-            tooltip: 'Speed threshold (in counts/ms) before acceleration begins', 
+            label: 'Speed Threshold', 
+            tooltip: 'Mouse movement speed (counts/ms) at which acceleration begins', 
             min: 0, 
             max: 50, 
             step: 1 
         },
         range: { 
-            label: 'Range', 
-            tooltip: 'Speed range (in counts/ms) over which sensitivity increases after offset', 
+            label: 'Acceleration Range', 
+            tooltip: 'The speed range (counts/ms) over which sensitivity scales from base to maximum', 
             min: 10, 
             max: 200, 
             step: 1 
         },
         growth_base: { 
-            label: 'Growth', 
-            tooltip: 'How quickly sensitivity increases within the range', 
+            label: 'Acceleration Rate', 
+            tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', 
             min: 1, 
             max: 1.5, 
             step: .01 
@@ -165,23 +165,48 @@ const setupTooltips = () => {
 
 const createSettings = () => {
     const updateValue = (key, value) => {
-        const val = key === 'range' ? Math.round(value) : parseFloat(value);
-        $(`#${key}-slider`).value = $(`#${key}-value`).value = val;
+        let val;
+        if (key === 'range') {
+            val = Math.round(value);
+        } else {
+            const step = cfg.settings[key].step;
+            const decimals = step.toString().split('.')[1]?.length || 0;
+            val = Number(parseFloat(value).toFixed(decimals));
+        }
+        $(`#${key}-value`).value = val;
         settings.values[key] = val;
         updatePlot();
     };
+    
+    const adjustValue = (key, delta) => {
+        const input = $(`#${key}-value`);
+        const info = cfg.settings[key];
+        const step = parseFloat(info.step);
+        const newVal = Math.min(Math.max(parseFloat(input.value) + delta * step, info.min), info.max);
+        updateValue(key, newVal);
+    };
+    
     $('#all-settings').innerHTML = Object.entries(cfg.settings)
         .map(([key, info]) => `
             <div class="setting-row">
                 <div class="setting-label" data-tooltip="${info.tooltip}">${info.label}</div>
-                <input type="range" class="setting-slider" id="${key}-slider" min="${info.min}" max="${info.max}" step="${info.step}">
-                <input type="number" class="setting-value" id="${key}-value" min="${info.min}" max="${info.max}" step="${info.step}">
+                <div class="value-control">
+                    <button class="value-adjust minus" onclick="this.blur()" data-key="${key}">-</button>
+                    <input type="number" class="setting-value" id="${key}-value" min="${info.min}" max="${info.max}" step="${info.step}">
+                    <button class="value-adjust plus" onclick="this.blur()" data-key="${key}">+</button>
+                </div>
             </div>`).join('');
+    
     Object.keys(cfg.settings).forEach(key => {
-        const slider = $(`#${key}-slider`);
         const value = $(`#${key}-value`);
-        slider.oninput = e => updateValue(key, e.target.value);
         value.onchange = e => updateValue(key, e.target.value);
+    });
+
+    document.querySelectorAll('.value-adjust').forEach(btn => {
+        btn.onclick = () => {
+            const delta = btn.classList.contains('plus') ? 1 : -1;
+            adjustValue(btn.dataset.key, delta);
+        };
     });
 };
 
@@ -245,7 +270,7 @@ const updatePlot = async () => {
 const initializeSettings = async () => {
     settings = await invoke('get_default_settings');
     Object.entries(settings.values).forEach(([key, value]) => {
-        $(`#${key}-slider`).value = $(`#${key}-value`).value = key === 'range' ? Math.round(value) : value;
+        $(`#${key}-value`).value = key === 'range' ? Math.round(value) : value;
     });
     updatePlot();
 };
@@ -257,9 +282,8 @@ const ensureUI = () => {
         createSettings();
         if (settings) {
             Object.entries(settings.values).forEach(([key, value]) => {
-                const slider = $(`#${key}-slider`);
                 const value_input = $(`#${key}-value`);
-                if (slider && value_input) slider.value = value_input.value = key === 'range' ? Math.round(value) : value;
+                if (value_input) value_input.value = key === 'range' ? Math.round(value) : value;
             });
             updatePlot();
         }
@@ -291,3 +315,5 @@ addEventListener('beforeunload', () => {
     if (chart) chart.destroy();
     clearInterval(checkUIInterval);
 });
+
+document.addEventListener('contextmenu', e => e.preventDefault());
