@@ -88,7 +88,7 @@ const cfg = {
             tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', 
             min: 0.1, 
             max: 5, 
-            step: .05 
+            step: 0.001 
         },
         offset: { 
             label: 'Speed Threshold', 
@@ -109,7 +109,7 @@ const cfg = {
             tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', 
             min: 1, 
             max: 1.5, 
-            step: .01 
+            step: 0.001 
         }
     }
 };
