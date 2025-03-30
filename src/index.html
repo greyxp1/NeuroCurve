@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="window-controls.css" />
-    <link rel="stylesheet" href="plot-panel.css" />
+    <link rel="stylesheet" href="plot.css" />
     <link rel="stylesheet" href="settings.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NeuroCurve</title>
@@ -12,6 +12,42 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <div class="container" data-tauri-drag-region></div>
+    <div class="container" data-tauri-drag-region>
+      <div class="main-content">
+        <div class="settings-panel">
+          <div class="panel-header"><h2>Settings</h2></div>
+          <div class="settings-container">
+            <div id="all-settings">
+              <template id="setting-row-template">
+                <div class="setting-row">
+                  <div class="setting-label"></div>
+                  <div class="value-control">
+                    <button class="value-adjust minus">-</button>
+                    <input type="number" class="setting-value">
+                    <button class="value-adjust plus">+</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button id="reset-btn">Reset</button>
+            <button id="export-btn">Export</button>
+          </div>
+        </div>
+        <div class="plot-panel">
+          <div class="window-controls">
+            <button class="titlebar-button" id="titlebar-minimize"></button>
+            <button class="titlebar-button" id="titlebar-maximize"></button>
+            <button class="titlebar-button" id="titlebar-close"></button>
+          </div>
+          <div class="panel-header"><h2>Sensitivity Curve</h2></div>
+          <div id="sensitivity-plot-container">
+            <canvas id="sensitivity-plot"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="floating-tooltip"></div>
   </body>
 </html>
