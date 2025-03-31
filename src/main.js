@@ -155,37 +155,15 @@ class SettingsManager {
             const row = template.content.cloneNode(true);
             const elements = {
                 label: row.querySelector('.setting-label'),
-                description: row.querySelector('.setting-description'),
                 input: row.querySelector('.setting-value'),
                 minus: row.querySelector('.minus'),
-                plus: row.querySelector('.plus'),
-                infoToggle: row.querySelector('.info-toggle')
+                plus: row.querySelector('.plus')
             };
 
             elements.label.textContent = info.label;
-            elements.description.textContent = info.tooltip;
             elements.input.id = `${key}-value`;
             Object.assign(elements.input, {min: info.min, max: info.max, step: info.step});
             elements.minus.dataset.key = elements.plus.dataset.key = key;
-
-            // Add click handler for info toggle
-            elements.infoToggle.addEventListener('click', (e) => {
-                const controls = e.target.closest('.setting-row').querySelector('.setting-controls');
-                const wasActive = e.target.classList.contains('active');
-                
-                // Reset all other descriptions
-                document.querySelectorAll('.info-toggle.active').forEach(toggle => {
-                    if (toggle !== e.target) {
-                        toggle.classList.remove('active');
-                        toggle.closest('.setting-row').querySelector('.setting-controls')
-                            .classList.remove('show-description');
-                    }
-                });
-
-                // Toggle current description
-                e.target.classList.toggle('active', !wasActive);
-                controls.classList.toggle('show-description', !wasActive);
-            });
 
             $('#all-settings').appendChild(row);
         });
