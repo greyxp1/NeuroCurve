@@ -62,44 +62,84 @@ const cfg = {
     }
 };
 
-class TooltipManager {
+class Tooltip {
     constructor() {
-        this.tip = $('.floating-tooltip');
+        this.tooltip = document.querySelector('.floating-tooltip');
         this.timeout = null;
+        this.currentTarget = null;
         this.setupListeners();
     }
 
-    show(target) {
-        const {right, top, height} = target.getBoundingClientRect();
-        const {height: h} = this.tip.getBoundingClientRect();
-        this.tip.style.cssText = `left:${right + 4}px;top:${top + (height/2) - (h/2)}px`;
+    show(target, x, y) {
+        if (!this.tooltip) return;
         
-        const {right: tipRight} = this.tip.getBoundingClientRect();
-        if (tipRight > window.innerWidth - 4) {
-            this.tip.style.left = `${right - this.tip.offsetWidth - 4}px`;
+        this.tooltip.textContent = target.dataset.tooltip;
+        this.tooltip.classList.add('visible');
+        
+        // Position the tooltip
+        const tooltipRect = this.tooltip.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        
+        // Default position to the right of the element
+        let left = targetRect.right + 10;
+        let top = targetRect.top + (targetRect.height - tooltipRect.height) / 2;
+        
+        // Check if tooltip would go off-screen to the right
+        if (left + tooltipRect.width > window.innerWidth) {
+            // Position to the left instead
+            left = targetRect.left - tooltipRect.width - 10;
         }
-        this.tip.classList.add('visible');
+        
+        // Ensure tooltip stays within vertical bounds
+        top = Math.max(10, Math.min(window.innerHeight - tooltipRect.height - 10, top));
+        
+        this.tooltip.style.left = `${left}px`;
+        this.tooltip.style.top = `${top}px`;
+    }
+
+    hide() {
+        if (this.tooltip) {
+            this.tooltip.classList.remove('visible');
+        }
     }
 
     setupListeners() {
-        document.addEventListener('mouseover', e => {
-            if (e.target.dataset.tooltip && getComputedStyle(e.target).cursor === 'help') {
-                clearTimeout(this.timeout);
-                this.timeout = setTimeout(() => {
-                    this.tip.textContent = e.target.dataset.tooltip;
-                    this.show(e.target);
-                }, 400);
+        document.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (!target || getComputedStyle(target).cursor !== 'help') return;
+
+            clearTimeout(this.timeout);
+            this.currentTarget = target;
+            
+            this.timeout = setTimeout(() => {
+                const rect = target.getBoundingClientRect();
+                this.show(target, rect.left, rect.top);
+            }, 400);
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (!target || getComputedStyle(target).cursor !== 'help') return;
+
+            clearTimeout(this.timeout);
+            this.hide();
+        });
+
+        // Handle scroll events on any scrollable container
+        document.addEventListener('scroll', () => {
+            if (this.currentTarget && this.tooltip.classList.contains('visible')) {
+                const rect = this.currentTarget.getBoundingClientRect();
+                this.show(this.currentTarget, rect.left, rect.top);
+            }
+        }, true);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (this.currentTarget && this.tooltip.classList.contains('visible')) {
+                const rect = this.currentTarget.getBoundingClientRect();
+                this.show(this.currentTarget, rect.left, rect.top);
             }
         });
-        
-        document.addEventListener('mouseout', e => 
-            e.target.dataset.tooltip && getComputedStyle(e.target).cursor === 'help' && 
-            (clearTimeout(this.timeout), this.tip.classList.remove('visible'))
-        );
-
-        document.addEventListener('scroll', () => 
-            (clearTimeout(this.timeout), this.tip.classList.remove('visible')), true
-        );
     }
 }
 
@@ -115,49 +155,88 @@ class SettingsManager {
             const row = template.content.cloneNode(true);
             const elements = {
                 label: row.querySelector('.setting-label'),
+                description: row.querySelector('.setting-description'),
                 input: row.querySelector('.setting-value'),
                 minus: row.querySelector('.minus'),
-                plus: row.querySelector('.plus')
+                plus: row.querySelector('.plus'),
+                infoToggle: row.querySelector('.info-toggle')
             };
 
             elements.label.textContent = info.label;
-            elements.label.dataset.tooltip = info.tooltip;
+            elements.description.textContent = info.tooltip;
             elements.input.id = `${key}-value`;
             Object.assign(elements.input, {min: info.min, max: info.max, step: info.step});
             elements.minus.dataset.key = elements.plus.dataset.key = key;
+
+            // Add click handler for info toggle
+            elements.infoToggle.addEventListener('click', (e) => {
+                const controls = e.target.closest('.setting-row').querySelector('.setting-controls');
+                const wasActive = e.target.classList.contains('active');
+                
+                // Reset all other descriptions
+                document.querySelectorAll('.info-toggle.active').forEach(toggle => {
+                    if (toggle !== e.target) {
+                        toggle.classList.remove('active');
+                        toggle.closest('.setting-row').querySelector('.setting-controls')
+                            .classList.remove('show-description');
+                    }
+                });
+
+                // Toggle current description
+                e.target.classList.toggle('active', !wasActive);
+                controls.classList.toggle('show-description', !wasActive);
+            });
 
             $('#all-settings').appendChild(row);
         });
     }
 
-    updateValue(key, value) {
-        const info = cfg.settings[key];
-        const precision = info.step.toString().split('.')[1]?.length || 0;
-        const val = key === 'range' ? Math.round(value) : Number(parseFloat(value).toFixed(precision));
-        $(`#${key}-value`).value = val;
-        settings.values[key] = val;
-        updatePlot();
-    }
-
     setupControls() {
-        Object.keys(cfg.settings).forEach(key => 
-            $(`#${key}-value`).onchange = e => this.updateValue(key, e.target.value)
-        );
-        
+        // Setup input change handlers
+        Object.keys(cfg.settings).forEach(key => {
+            const input = $(`#${key}-value`);
+            input.onchange = e => this.updateValue(key, parseFloat(e.target.value));
+        });
+
+        // Setup plus/minus button handlers
         document.querySelectorAll('.value-adjust').forEach(btn => {
             btn.onclick = () => {
                 const key = btn.dataset.key;
                 const info = cfg.settings[key];
                 const input = $(`#${key}-value`);
-                const delta = btn.classList.contains('plus') ? 1 : -1;
-                this.updateValue(key, 
-                    Math.min(Math.max(
-                        parseFloat(input.value) + delta * parseFloat(info.step), 
+                const currentValue = parseFloat(input.value);
+                const step = parseFloat(info.step);
+                const delta = btn.classList.contains('plus') ? step : -step;
+                
+                const newValue = Math.min(
+                    Math.max(
+                        currentValue + delta,
                         info.min
-                    ), info.max)
+                    ),
+                    info.max
                 );
+                
+                input.value = newValue;
+                this.updateValue(key, newValue);
             };
         });
+    }
+
+    updateValue(key, value) {
+        const input = $(`#${key}-value`);
+        const info = cfg.settings[key];
+        
+        // Ensure value is within bounds
+        value = Math.min(Math.max(value, info.min), info.max);
+        
+        // Update input value
+        input.value = value;
+        
+        // Update settings and plot
+        if (settings) {
+            settings.values[key] = value;
+            updatePlot(true);
+        }
     }
 }
 
@@ -208,19 +287,26 @@ const chartAreaBorder = {
     }
 };
 
-const updatePlot = async () => {
-    if (!settings || !$('#sensitivity-plot')) return;
-    
-    const points = await invoke('calculate_curve', {settings});
-    const maxValue = Math.max(...points.map(p => p[1]));
-    
+const createChart = async (points, maxValue) => {
+    const maxX = Math.max(...points.map(p => p[0]));
+    // Keep both points at transition by not modifying the data
+    const processedPoints = points.map(p => p[1]);
+
     const baseDataset = {
-        data: points.map(p => p[1]),
+        data: processedPoints,
         borderColor: '#4d9fff',
         borderWidth: 2.5,
         pointRadius: 0,
         tension: 0.4,
+        cubicInterpolationMode: 'monotone',
         fill: true,
+        backgroundColor: ctx => {
+            if (!ctx?.chart?.chartArea) return 'rgba(77, 159, 255, 0.05)';
+            const gradient = ctx.chart.ctx.createLinearGradient(0, ctx.chart.chartArea.bottom, 0, ctx.chart.chartArea.top);
+            gradient.addColorStop(0, 'rgba(77, 159, 255, 0.01)');
+            gradient.addColorStop(1, 'rgba(77, 159, 255, 0.15)');
+            return gradient;
+        },
     };
 
     const config = {
@@ -257,12 +343,33 @@ const updatePlot = async () => {
         },
         options: {
             ...cfg.chart.options,
+            animation: {
+                duration: 300,
+                easing: 'easeOutCubic'
+            },
+            elements: {
+                line: {
+                    tension: 0.4,
+                    capBezierPoints: true
+                }
+            },
             scales: {
                 ...cfg.chart.options.scales,
+                x: {
+                    ...cfg.chart.options.scales.x,
+                    type: 'linear',
+                    beginAtZero: true,
+                    max: maxX,
+                    grid: {
+                        ...cfg.chart.options.scales.x.grid,
+                        drawTicks: true
+                    }
+                },
                 y: {
                     ...cfg.chart.options.scales.y,
                     min: 0,
-                    max: maxValue + 0.5,
+                    max: maxValue,
+                    beginAtZero: true,
                     ticks: {
                         ...cfg.chart.options.scales.y.ticks,
                         callback: v => parseFloat(v).toFixed(2)
@@ -273,19 +380,38 @@ const updatePlot = async () => {
         plugins: [chartAreaBorder]
     };
 
-    if (chart) {
-        Object.assign(chart, {data: config.data, options: config.options});
+    chart = new Chart($('#sensitivity-plot'), config);
+    const animate = () => {
         chart.update('none');
-    } else {
-        chart = new Chart($('#sensitivity-plot'), config);
-    }
-    
-    if (!chart.animationLoop) {
-        const animate = () => {
-            chart.update('none');
-            chart.animationFrame = requestAnimationFrame(animate);
-        };
         chart.animationFrame = requestAnimationFrame(animate);
+    };
+    chart.animationFrame = requestAnimationFrame(animate);
+};
+
+const updatePlot = async (animate = true) => {
+    if (!settings || !$('#sensitivity-plot')) return;
+    
+    const points = await invoke('calculate_curve', {settings});
+    const maxValue = Math.max(...points.map(p => p[1])) + 0.1;
+    const maxX = Math.max(...points.map(p => p[0]));
+
+    if (chart) {
+        // Keep both points at transition by not modifying the data
+        const processedPoints = points.map(p => p[1]);
+
+        chart.data.datasets[0].data = processedPoints;
+        chart.data.datasets[1].data = processedPoints;
+        chart.data.labels = points.map(p => parseFloat(p[0]));
+        chart.options.scales.y.max = maxValue;
+        chart.options.scales.x.max = maxX;
+        
+        chart.update({
+            duration: animate ? 300 : 0,
+            easing: 'easeOutCubic',
+            lazy: true
+        });
+    } else {
+        await createChart(points, maxValue);
     }
 };
 
@@ -294,15 +420,17 @@ const initializeSettings = async () => {
     Object.entries(settings.values).forEach(([key, value]) => 
         $(`#${key}-value`).value = key === 'range' ? Math.round(value) : value
     );
-    cleanupChart();
-    await updatePlot();
 };
 
 const setupEventListeners = () => {
     $('#reset-btn').onclick = async () => {
         const btn = $('#reset-btn');
         btn.disabled = true;
+        
+        await updatePlot(false);
         await initializeSettings();
+        await updatePlot(true);
+        
         btn.disabled = false;
     };
     
@@ -319,16 +447,17 @@ const setupEventListeners = () => {
         }
     };
 
-    ['minimize', 'toggleMaximize', 'close'].forEach(action => 
-        $(`#titlebar-${action.toLowerCase()}`).onclick = () => appWindow[action]()
-    );
+    $('#titlebar-minimize').onclick = () => appWindow.minimize();
+    $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();
+    $('#titlebar-close').onclick = () => appWindow.close();
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    new TooltipManager();
+    new Tooltip();
     new SettingsManager();
     await initializeSettings();
     setupEventListeners();
+    await updatePlot(true);
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());

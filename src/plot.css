@@ -35,6 +35,9 @@
 
 #sensitivity-plot {
   width:100%!important;
-  height:100%!important
+  height:100%!important;
+  shape-rendering: crispEdges;
+  image-rendering: optimizeQuality;
 }
+
 

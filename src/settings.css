@@ -104,31 +104,122 @@
   position: relative;
   animation: slideInRight .5s ease-out backwards;
   animation-delay: calc(var(--n,0) * .1s);
-  transition: transform .2s ease;
   width: 100%;
 }
 
+.setting-label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .setting-label {
-  min-width: min-content;
-  padding: 4px 12px;
   font: 500 13px sans-serif;
-  text-align: center;
   color: var(--text-color);
   letter-spacing: .2px;
-  display: inline-block;
-  margin: 0 auto;
+  text-align: center;
+}
+
+.info-toggle {
+  background: none;
+  border: none;
+  color: var(--text-color-dim);
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  transition: all .2s ease;
+  opacity: 0.6;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.info-toggle:hover {
+  opacity: 1;
+  color: var(--text-color);
+}
+
+.info-toggle.active {
+  color: var(--primary);
+  opacity: 1;
+  transform: rotate(45deg);
+}
+
+.setting-controls {
+  position: relative;
+  width: 140px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: height var(--anim);
+}
+
+.setting-description {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  font: 400 11px sans-serif;
+  color: var(--text-color-dim);
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--anim);
+  padding: 0 4px;
+  box-sizing: border-box;
+  min-height: 32px; /* Match default height */
 }
 
 .value-control {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 140px;
-  padding: 2px;
-  border-radius: 6px;
-  margin: 0 auto;
-  position: relative;
+  transition: opacity var(--anim);
+}
+
+/* Expand height when description is shown */
+.setting-controls.show-description {
+  height: 48px;
+}
+
+.setting-controls.show-description .value-control {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.setting-controls.show-description .setting-description {
+  opacity: 1;
+}
+
+/* Add spacing between rows to prevent overlap during animation */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Smooth transition for pushing down subsequent elements */
+.settings-container > * {
+  transition: transform var(--anim);
+}
+
+/* Push down subsequent elements when a description is shown */
+.setting-controls.show-description ~ .setting-row {
+  transform: translateY(16px);
 }
 
 .value-adjust {
