@@ -1,70 +1,132 @@
-const { invoke } = window.__TAURI__.core;
-const { getCurrentWindow } = window.__TAURI__.window;
-const appWindow = getCurrentWindow();
-const $ = s => document.querySelector(s);
-const el = (t, c, a = {}) => Object.assign(document.createElement(t), { className: c, ...a });
+const {invoke} = window.__TAURI__.core, {getCurrentWindow} = window.__TAURI__.window, appWindow = getCurrentWindow(), $ = s => document.querySelector(s), el = (t, c, a = {}) => Object.assign(document.createElement(t), {className: c, ...a});
 
-let chart = null;
-let settings = null;
+const throttle = (func, limit) => {
+    let inThrottle;
+    return function() {
+        const args = arguments, context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+};
+
+const updatePlotThrottled = throttle(async (animate = true) => {
+    if (!settings || !$('#sensitivity-plot')) return;
+    
+    const points = await invoke('calculate_curve', {settings});
+    const maxValue = Math.max(...points.map(p => p[1])) + 0.5;
+    const maxX = Math.max(...points.map(p => p[0]));
+
+    if (chart) {
+        const processedPoints = points.map(p => p[1]);
+        chart.data.datasets[0].data = processedPoints;
+        chart.data.datasets[1].data = processedPoints;
+        chart.data.labels = points.map(p => parseFloat(p[0]));
+        chart.options.scales.y.max = maxValue;
+        chart.options.scales.x.max = maxX;
+        chart.update({duration: animate ? 300 : 0, easing: 'easeOutCubic', lazy: true});
+    } else {
+        await createChart(points, maxValue);
+    }
+}, 100);
+
+const isWebView2 = () => navigator.userAgent.includes('Edg') && window.chrome;
+
+const applyWebView2Optimizations = () => {
+    if (isWebView2()) {
+        document.body.classList.add('webview2');
+        cfg.chart.options.animation.duration = 600;
+        cfg.chart.options.animation.easing = 'linear';
+        cfg.chart.options.scales.x.grid.color = 'rgba(255, 255, 255, 0.1)';
+        cfg.chart.options.scales.y.grid.color = 'rgba(255, 255, 255, 0.1)';
+        const style = document.createElement('style');
+        style.textContent = `
+            .webview2 .plot-panel,
+            .webview2 .settings-panel {
+                background: rgba(0, 0, 0, 0.97) !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            
+            .webview2 .panel-header h2 {
+                background: linear-gradient(120deg, var(--text-primary) 0%, var(--primary) 50%, var(--text-primary) 100%);
+                background-size: 200% auto;
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                animation: grad 32s linear infinite;
+            }
+            .webview2 .panel-header h2::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, var(--primary), transparent);
+                animation: glow 16s ease infinite;
+            }
+            .webview2 #sensitivity-plot {
+                image-rendering: auto;
+            }
+        `;
+        document.head.appendChild(style);
+        const canvas = $('#sensitivity-plot');
+        if (canvas) {
+            canvas.getContext('2d', {
+                alpha: false,
+                desynchronized: true,
+                powerPreference: 'high-performance'
+            });
+        }
+    }
+};
+
+let chart = null, settings = null;
 
 const cfg = {
     chart: {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 1200, easing: 'easeInOutQuart', delay: ctx => ctx.type === 'data' ? ctx.dataIndex * 3 : 0 },
-            transitions: { active: { animation: { duration: 800, easing: 'easeOutCubic', delay: ctx => ctx.dataIndex * 2 } } },
-            plugins: { 
-                legend: { display: false }, 
-                tooltip: false
-            },
+            animation: {duration: 1200, easing: 'easeInOutQuart', delay: ctx => ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 3 : 0},
+            plugins: {legend: {display: false}, tooltip: false, decimation: {enabled: true, algorithm: 'min-max'}},
+            elements: {point: {radius: 0, hoverRadius: 0}, line: {tension: 0.4, borderWidth: 2.5}},
+            transitions: {active: {animation: {duration: 400}}},
+            devicePixelRatio: window.devicePixelRatio || 1,
             scales: {
                 x: {
-                    grid: { 
-                        color: 'rgba(255, 255, 255, 0.03)',
-                        drawTicks: false,
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        drawOnChartArea: true
-                    },
-                    border: { 
-                        display: false
-                    },
+                    grid: {color: 'rgba(255, 255, 255, 0.03)', drawTicks: false, borderColor: 'transparent', borderWidth: 0, drawOnChartArea: true},
+                    border: {display: false},
                     position: 'bottom',
-                    ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 11, family: 'Inter' }, maxRotation: 0, padding: 10, callback: v => parseFloat(v), maxTicksLimit: 10 },
-                    title: { display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255, 255, 255, 0.6)', font: { size: 12, family: 'Inter', weight: '500' }, padding: { top: 15 } }
+                    ticks: {color: 'rgba(255, 255, 255, 0.4)', font: {size: 11, family: 'Inter'}, maxRotation: 0, padding: 10, callback: v => parseFloat(v), maxTicksLimit: 10},
+                    title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255, 255, 255, 0.6)', font: {size: 12, family: 'Inter', weight: '500'}, padding: {top: 15}}
                 },
                 y: {
-                    grid: { 
-                        color: 'rgba(255, 255, 255, 0.03)',
-                        drawTicks: false,
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        drawOnChartArea: true
-                    },
-                    border: { 
-                        display: false
-                    },
+                    grid: {color: 'rgba(255, 255, 255, 0.03)', drawTicks: false, borderColor: 'transparent', borderWidth: 0, drawOnChartArea: true},
+                    border: {display: false},
                     position: 'left',
-                    ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 11, family: 'Inter' }, padding: 10, callback: v => parseFloat(v).toFixed(2) },
-                    title: { display: true, text: 'Sensitivity Multiplier', color: 'rgba(255, 255, 255, 0.6)', font: { size: 12, family: 'Inter', weight: '500' }, padding: { bottom: 15 } },
+                    ticks: {color: 'rgba(255, 255, 255, 0.4)', font: {size: 11, family: 'Inter'}, padding: 10, callback: v => parseFloat(v).toFixed(2)},
+                    title: {display: true, text: 'Sensitivity Multiplier', color: 'rgba(255, 255, 255, 0.6)', font: {size: 12, family: 'Inter', weight: '500'}, padding: {bottom: 15}},
                     beginAtZero: true
                 }
             }
         }
     },
     settings: {
-        min_sens: { label: 'Base Sensitivity', tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', min: 0.1, max: 2, step: 0.001 },
-        max_sens: { label: 'Maximum Sensitivity', tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', min: 0.1, max: 5, step: 0.001 },
-        offset: { label: 'Speed Threshold', tooltip: 'Mouse movement speed (counts/ms) at which acceleration begins', min: 0, max: 50, step: 1 },
-        range: { label: 'Acceleration Range', tooltip: 'The speed range (counts/ms) over which sensitivity scales from base to maximum', min: 10, max: 200, step: 1 },
-        growth_base: { label: 'Acceleration Rate', tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', min: 1, max: 1.5, step: 0.001 }
+        min_sens: {label: 'Base Sensitivity', tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', min: 0.1, max: 2, step: 0.001},
+        max_sens: {label: 'Maximum Sensitivity', tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', min: 0.1, max: 5, step: 0.001},
+        offset: {label: 'Speed Threshold', tooltip: 'Mouse movement speed (counts/ms) at which acceleration begins', min: 0, max: 50, step: 1},
+        range: {label: 'Acceleration Range', tooltip: 'The speed range (counts/ms) over which sensitivity scales from base to maximum', min: 10, max: 200, step: 1},
+        growth_base: {label: 'Acceleration Rate', tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', min: 1, max: 1.5, step: 0.001}
     }
 };
 
 class Tooltip {
     constructor() {
-        this.tooltip = document.querySelector('.floating-tooltip');
+        this.tooltip = $('.floating-tooltip');
         this.timeout = null;
         this.currentTarget = null;
         this.setupListeners();
@@ -72,27 +134,16 @@ class Tooltip {
 
     show(target, x, y) {
         if (!this.tooltip) return;
-        
         this.tooltip.textContent = target.dataset.tooltip;
         this.tooltip.classList.add('visible');
-        
-        // Position the tooltip
         const tooltipRect = this.tooltip.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
-        
-        // Default position to the right of the element
         let left = targetRect.right + 10;
         let top = targetRect.top + (targetRect.height - tooltipRect.height) / 2;
-        
-        // Check if tooltip would go off-screen to the right
         if (left + tooltipRect.width > window.innerWidth) {
-            // Position to the left instead
             left = targetRect.left - tooltipRect.width - 10;
         }
-        
-        // Ensure tooltip stays within vertical bounds
         top = Math.max(10, Math.min(window.innerHeight - tooltipRect.height - 10, top));
-        
         this.tooltip.style.left = `${left}px`;
         this.tooltip.style.top = `${top}px`;
     }
@@ -104,7 +155,7 @@ class Tooltip {
     }
 
     setupListeners() {
-        document.addEventListener('mouseover', (e) => {
+        document.addEventListener('mouseover', e => {
             const target = e.target.closest('[data-tooltip]');
             if (!target || getComputedStyle(target).cursor !== 'help') return;
 
@@ -117,7 +168,7 @@ class Tooltip {
             }, 400);
         });
 
-        document.addEventListener('mouseout', (e) => {
+        document.addEventListener('mouseout', e => {
             const target = e.target.closest('[data-tooltip]');
             if (!target || getComputedStyle(target).cursor !== 'help') return;
 
@@ -125,7 +176,6 @@ class Tooltip {
             this.hide();
         });
 
-        // Handle scroll events on any scrollable container
         document.addEventListener('scroll', () => {
             if (this.currentTarget && this.tooltip.classList.contains('visible')) {
                 const rect = this.currentTarget.getBoundingClientRect();
@@ -133,7 +183,6 @@ class Tooltip {
             }
         }, true);
 
-        // Handle window resize
         window.addEventListener('resize', () => {
             if (this.currentTarget && this.tooltip.classList.contains('visible')) {
                 const rect = this.currentTarget.getBoundingClientRect();
@@ -170,13 +219,11 @@ class SettingsManager {
     }
 
     setupControls() {
-        // Setup input change handlers
         Object.keys(cfg.settings).forEach(key => {
             const input = $(`#${key}-value`);
             input.onchange = e => this.updateValue(key, parseFloat(e.target.value));
         });
 
-        // Setup plus/minus button handlers
         document.querySelectorAll('.value-adjust').forEach(btn => {
             btn.onclick = () => {
                 const key = btn.dataset.key;
@@ -186,13 +233,7 @@ class SettingsManager {
                 const step = parseFloat(info.step);
                 const delta = btn.classList.contains('plus') ? step : -step;
                 
-                const newValue = Math.min(
-                    Math.max(
-                        currentValue + delta,
-                        info.min
-                    ),
-                    info.max
-                );
+                const newValue = Math.min(Math.max(currentValue + delta, info.min), info.max);
                 
                 input.value = newValue;
                 this.updateValue(key, newValue);
@@ -203,17 +244,11 @@ class SettingsManager {
     updateValue(key, value) {
         const input = $(`#${key}-value`);
         const info = cfg.settings[key];
-        
-        // Ensure value is within bounds
         value = Math.min(Math.max(value, info.min), info.max);
-        
-        // Update input value
         input.value = value;
-        
-        // Update settings and plot
         if (settings) {
             settings.values[key] = value;
-            updatePlot(true);
+            updatePlotThrottled(true);
         }
     }
 }
@@ -267,17 +302,12 @@ const chartAreaBorder = {
 
 const createChart = async (points, maxValue) => {
     const maxX = Math.max(...points.map(p => p[0]));
-    // Keep both points at transition by not modifying the data
-    const processedPoints = points.map(p => p[1]);
-
     const baseDataset = {
-        data: processedPoints,
-        borderColor: '#4d9fff',
-        borderWidth: 2.5,
-        pointRadius: 0,
-        tension: 0.4,
-        cubicInterpolationMode: 'monotone',
+        data: points.map(p => p[1]),
         fill: true,
+        borderWidth: 2,
+        pointRadius: 0,
+        borderColor: 'rgba(77, 159, 255, 0.8)',
         backgroundColor: ctx => {
             if (!ctx?.chart?.chartArea) return 'rgba(77, 159, 255, 0.05)';
             const gradient = ctx.chart.ctx.createLinearGradient(0, ctx.chart.chartArea.bottom, 0, ctx.chart.chartArea.top);
@@ -285,6 +315,9 @@ const createChart = async (points, maxValue) => {
             gradient.addColorStop(1, 'rgba(77, 159, 255, 0.15)');
             return gradient;
         },
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,
+        capBezierPoints: true
     };
 
     const config = {
@@ -321,16 +354,8 @@ const createChart = async (points, maxValue) => {
         },
         options: {
             ...cfg.chart.options,
-            animation: {
-                duration: 300,
-                easing: 'easeOutCubic'
-            },
-            elements: {
-                line: {
-                    tension: 0.4,
-                    capBezierPoints: true
-                }
-            },
+            animation: {duration: 300, easing: 'easeOutCubic'},
+            elements: {line: {tension: 0.4, capBezierPoints: true, cubicInterpolationMode: 'monotone'}},
             scales: {
                 ...cfg.chart.options.scales,
                 x: {
@@ -338,20 +363,14 @@ const createChart = async (points, maxValue) => {
                     type: 'linear',
                     beginAtZero: true,
                     max: maxX,
-                    grid: {
-                        ...cfg.chart.options.scales.x.grid,
-                        drawTicks: true
-                    }
+                    grid: {...cfg.chart.options.scales.x.grid, drawTicks: true}
                 },
                 y: {
                     ...cfg.chart.options.scales.y,
                     min: 0,
                     max: maxValue,
                     beginAtZero: true,
-                    ticks: {
-                        ...cfg.chart.options.scales.y.ticks,
-                        callback: v => parseFloat(v).toFixed(2)
-                    }
+                    ticks: {...cfg.chart.options.scales.y.ticks, callback: v => parseFloat(v).toFixed(2)}
                 }
             }
         },
@@ -359,39 +378,31 @@ const createChart = async (points, maxValue) => {
     };
 
     chart = new Chart($('#sensitivity-plot'), config);
+    
     const animate = () => {
-        chart.update('none');
+        if (!document.hidden) {
+            chart.update('none');
+        }
         chart.animationFrame = requestAnimationFrame(animate);
     };
+    
     chart.animationFrame = requestAnimationFrame(animate);
 };
 
-const updatePlot = async (animate = true) => {
-    if (!settings || !$('#sensitivity-plot')) return;
-    
-    const points = await invoke('calculate_curve', {settings});
-    const maxValue = Math.max(...points.map(p => p[1])) + 0.1;
-    const maxX = Math.max(...points.map(p => p[0]));
-
-    if (chart) {
-        // Keep both points at transition by not modifying the data
-        const processedPoints = points.map(p => p[1]);
-
-        chart.data.datasets[0].data = processedPoints;
-        chart.data.datasets[1].data = processedPoints;
-        chart.data.labels = points.map(p => parseFloat(p[0]));
-        chart.options.scales.y.max = maxValue;
-        chart.options.scales.x.max = maxX;
-        
-        chart.update({
-            duration: animate ? 300 : 0,
-            easing: 'easeOutCubic',
-            lazy: true
-        });
-    } else {
-        await createChart(points, maxValue);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && chart?.animationFrame) {
+        cancelAnimationFrame(chart.animationFrame);
+        chart.animationFrame = null;
+    } else if (!document.hidden && chart && !chart.animationFrame) {
+        const animate = () => {
+            if (!document.hidden) {
+                chart.update('none');
+            }
+            chart.animationFrame = requestAnimationFrame(animate);
+        };
+        chart.animationFrame = requestAnimationFrame(animate);
     }
-};
+});
 
 const initializeSettings = async () => {
     settings = await invoke('get_default_settings');
@@ -404,11 +415,9 @@ const setupEventListeners = () => {
     $('#reset-btn').onclick = async () => {
         const btn = $('#reset-btn');
         btn.disabled = true;
-        
-        await updatePlot(false);
+        await updatePlotThrottled(false);
         await initializeSettings();
-        await updatePlot(true);
-        
+        await updatePlotThrottled(true);
         btn.disabled = false;
     };
     
@@ -431,11 +440,12 @@ const setupEventListeners = () => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+    applyWebView2Optimizations();
     new Tooltip();
     new SettingsManager();
     await initializeSettings();
     setupEventListeners();
-    await updatePlot(true);
+    await updatePlotThrottled(true);
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -446,7 +456,7 @@ if (import.meta.hot) {
             Object.entries(settings.values).forEach(([key, value]) => 
                 $(`#${key}-value`).value = key === 'range' ? Math.round(value) : value
             );
-            await updatePlot();
+            await updatePlotThrottled();
         }
     });
 }

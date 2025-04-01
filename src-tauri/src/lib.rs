@@ -32,7 +32,10 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
     
     let mut result = Vec::with_capacity(n);
     let offset_points = (offset.ceil() as usize).min(n);
-    result.extend(vec![min_sens; offset_points]);
+    
+    result.reserve(n);
+    
+    result.extend(std::iter::repeat(min_sens).take(offset_points));
     
     if offset_points >= n { return result; }
     
@@ -40,8 +43,9 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
     let range_size = range.ceil() as usize;
     let expo_len = if plateau && remaining > range_size { range_size } else { remaining };
     
+    let sens_diff = max_sens - min_sens;
+    
     let curve: Vec<f64> = if growth_base <= 1.0 {
-        let sens_diff = max_sens - min_sens;
         let inv_range = range.recip();
         (0..expo_len).map(|i| {
             let t = (i as f64 * inv_range).min(1.0);
@@ -50,7 +54,6 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
         }).collect()
     } else {
         let base_factor = (growth_base.powf(range) - 1.0).recip();
-        let sens_diff = max_sens - min_sens;
         let inv_range = range.recip();
         (0..expo_len).map(|i| {
             let t = ((growth_base.powf(i as f64 * inv_range * range) - 1.0) * base_factor).min(1.0);
@@ -58,10 +61,12 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
         }).collect()
     };
     
-    result.extend(curve);
+    result.extend_from_slice(&curve);
+    
     if plateau && remaining > expo_len {
-        result.extend(vec![max_sens; remaining - expo_len]);
+        result.extend(std::iter::repeat(max_sens).take(remaining - expo_len));
     }
+    
     result
 }
 
@@ -72,19 +77,28 @@ fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
     
     let range = get_val("range");
     let offset = get_val("offset");
+    let min_sens = get_val("min_sens");
+    let max_sens = get_val("max_sens");
+    let growth_base = get_val("growth_base");
+    
     let limit = ((range + offset + 10.0).ceil() as usize).min(INPUT_RANGE);
     
     let curve = generate_sensitivity_curve(
-        INPUT_RANGE,
-        get_val("growth_base"),
+        limit,
+        growth_base,
         range,
-        get_val("min_sens"),
-        get_val("max_sens"),
+        min_sens,
+        max_sens,
         offset,
         true
     );
     
-    (0..limit).map(|i| (i as f64, curve[i])).collect()
+    let mut result = Vec::with_capacity(limit);
+    for i in 0..limit {
+        result.push((i as f64, curve[i]));
+    }
+    
+    result
 }
 
 pub fn run() {
