@@ -1,18 +1,35 @@
 :root {
+  /* Base colors */
   --bg-primary: #0a0a0a;
   --text-primary: #e1e1e1;
   --text-secondary: #fff;
   --primary: #4d9fff;
   --error: #ff4d4d;
   --border: #2a2a2a;
+
+  /* Layout */
   --corner-radius: 12px;
-  --slider-height: 6px;
   --button-height: 40px;
   --panel-bg: rgba(12,12,12,.97);
   --panel-border: rgba(255,255,255,.02);
   --blur-effect: blur(8px) saturate(105%);
+
+  /* Animations */
   --anim-fast: .2s ease;
   --anim-normal: .3s ease;
+
+  /* Settings panel */
+  --element-bg: rgba(255,255,255,.1);
+  --element-bg-hover: rgba(255,255,255,.15);
+  --element-bg-active: rgba(255,255,255,.2);
+  --text-color: rgba(255,255,255,.9);
+  --text-color-dim: rgba(255,255,255,.7);
+  --border-glow: rgba(77,159,255,.2);
+  --anim: .15s ease;
+  --panel-w: 180px;
+  --input-h: 28px;
+  --grad-primary: linear-gradient(45deg,var(--primary) 0%,#6eb4ff 50%,var(--primary) 100%);
+  --grad-error: linear-gradient(45deg,var(--error) 0%,#ff6b6b 50%,var(--error) 100%);
 }
 
 * {-webkit-user-select:none;user-select:none}
@@ -172,11 +189,10 @@ body {
 
 .hardware-accelerated {
     transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
     will-change: transform, opacity;
 }
 
+/* Animations */
 @keyframes grad {
     0% { background-position: 200% 0 }
     100% { background-position: -200% 0 }
@@ -186,6 +202,26 @@ body {
     0% { opacity: 0.15; }
     50% { opacity: 0.6; }
     100% { opacity: 0.15; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px) }
+    to { opacity: 1; transform: translateX(0) }
+}
+
+@keyframes btnGlow {
+    0%, 100% { background-position: 0 50% }
+    50% { background-position: 100% 50% }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px) }
+    to { opacity: 1; transform: translateY(0) }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(10px) }
+    to { opacity: 1; transform: translateX(0) }
 }
 
 .panel-header h2 {
@@ -214,13 +250,177 @@ body {
     animation: glow 16s ease infinite;
 }
 
+/* Plot styles */
 #sensitivity-plot-container {
-    flex: 1;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    will-change: transform;
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
 }
+
+#sensitivity-plot {
+  width: 100% !important;
+  height: 100% !important;
+  shape-rendering: crispEdges;
+  image-rendering: optimizeQuality;
+  display: block;
+}
+
+/* Window controls */
+.window-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  z-index: 1000;
+}
+
+.titlebar-button {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#titlebar-close { background: #ff5f57; }
+#titlebar-minimize { background: #ffbd2e; }
+#titlebar-maximize { background: #28c940; }
+
+#titlebar-close:hover {
+  background: #ff6e67;
+  box-shadow: 0 0 6px rgba(255, 95, 87, 0.6);
+}
+
+#titlebar-minimize:hover {
+  background: #ffca43;
+  box-shadow: 0 0 6px rgba(255, 189, 46, 0.6);
+}
+
+#titlebar-maximize:hover {
+  background: #2fd948;
+  box-shadow: 0 0 6px rgba(40, 201, 64, 0.6);
+}
+
+#titlebar-close:active { background: #ff4b42; }
+#titlebar-minimize:active { background: #ffb224; }
+#titlebar-maximize:active { background: #23b939; }
+
+.titlebar-button:hover {
+  transform: scale(1.12);
+}
+
+/* Settings styles */
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  position: relative;
+  animation: slideInRight .5s ease-out backwards;
+  animation-delay: calc(var(--n,0) * .1s);
+  width: 100%;
+}
+
+.setting-label {
+  font: 500 13px sans-serif;
+  color: var(--text-color);
+  letter-spacing: .2px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.setting-controls {
+  position: relative;
+  width: 140px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.value-control {
+  width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.value-adjust {
+  width: var(--input-h);
+  height: var(--input-h);
+  background: var(--element-bg);
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-color);
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.value-adjust:hover {
+  background: var(--element-bg-hover);
+  color: var(--text-color);
+  transform: translateY(-1px);
+}
+
+.value-adjust:active {transform:scale(.95);background:var(--element-bg-active)}
+
+.setting-value {
+  flex: 1;
+  min-width: 40px;
+  max-width: 50px;
+  padding: 8px;
+  font: 500 13px 'JetBrains Mono',monospace;
+  text-align: center;
+  background: var(--element-bg);
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-color);
+  transition: all .2s ease;
+}
+
+.setting-value:focus {background:var(--element-bg-hover);color:#fff;outline:0}
+.setting-value::-webkit-outer-spin-button,
+.setting-value::-webkit-inner-spin-button {appearance:none}
+
+.action-buttons::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,transparent,var(--border-glow),transparent);
+  animation: glow 16s var(--anim) infinite;
+  transform-origin: center;
+}
+
+#reset-btn,#export-btn {
+  flex: 1;
+  height: var(--button-height);
+  border: 0;
+  border-radius: var(--corner-radius);
+  font: 600 14px sans-serif;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+#reset-btn {background:var(--grad-error)}
+#export-btn {background:var(--grad-primary)}
+
+#reset-btn:hover,#export-btn:hover {transform:translateY(-1px);filter:brightness(1.1)}
+#reset-btn:hover {box-shadow:0 8px 16px -4px rgba(255,77,77,.2)}
+#export-btn:hover {box-shadow:0 8px 16px -4px rgba(77,159,255,.2)}
