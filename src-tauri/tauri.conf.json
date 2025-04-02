@@ -19,7 +19,9 @@
         "decorations": false,
         "transparent": true,
         "shadow": false,
-        "center": true
+        "center": true,
+        "theme": "Dark",
+        "hiddenTitle": true
       }
     ],
     "security": {

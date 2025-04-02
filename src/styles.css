@@ -1,6 +1,9 @@
 :root {
+  /* App window corner radius */
+  --window-radius: 12px;
+
   /* Base colors */
-  --bg-primary: #0a0a0a;
+  --bg-primary: rgba(10, 10, 10, 0.5);
   --text-primary: #e1e1e1;
   --text-secondary: #fff;
   --primary: #4d9fff;
@@ -10,7 +13,7 @@
   /* Layout */
   --corner-radius: 12px;
   --button-height: 40px;
-  --panel-bg: rgba(12,12,12,.97);
+  --panel-bg: rgba(12,12,12,.85);
   --panel-border: rgba(255,255,255,.02);
   --blur-effect: blur(8px) saturate(105%);
 
@@ -34,15 +37,23 @@
 
 * {-webkit-user-select:none;user-select:none}
 
-html {background:0;height:100vh;margin:0;padding:0}
+html {
+  background: transparent;height:100vh;margin:0;padding:0;
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  /* Ensure content is clipped to rounded corners */
+  clip-path: inset(0 0 0 0 round var(--window-radius));
+}
 
 body {
   margin:0;padding:0;
   font:400 16px 'Inter',system-ui,-apple-system,sans-serif;
-  background:0;color:var(--text-primary);
+  background: transparent;color:var(--text-primary);
   height:100vh;overflow:hidden;
   display:flex;flex-direction:column;
-  position:relative
+  position:relative;
+  border-radius: var(--window-radius);
+  clip-path: inset(0 0 0 0 round var(--window-radius));
 }
 
 .container {
@@ -54,47 +65,61 @@ body {
   position:relative;padding:0;
   transform:translate3d(0,0,0);
   backface-visibility:hidden;
-  -webkit-backface-visibility:hidden
+  -webkit-backface-visibility:hidden;
+  border-radius: var(--window-radius);
+  background: transparent;
 }
 
 .main-content {
   display:flex;flex-direction:row;
   gap:16px;flex:1;padding:16px;
   -webkit-app-region:drag;
-  overflow:hidden;position:relative
+  overflow:hidden;position:relative;
+  border-radius: var(--window-radius);
+  background: transparent;
 }
 
 .plot-panel,.settings-panel {
-  background:var(--panel-bg);
-  border-radius:var(--corner-radius);
-  padding:12px;display:flex;
-  flex-direction:column;gap:8px;
-  box-sizing:border-box;
-  overflow:hidden;pointer-events:auto;
-  backdrop-filter:var(--blur-effect);
-  -webkit-backdrop-filter:var(--blur-effect);
-  border:1px solid var(--panel-border);
-  will-change:transform;
-  transform:translate3d(0,0,0)
+  background: var(--panel-bg);
+  border-radius: var(--corner-radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+  backdrop-filter: var(--blur-effect);
+  -webkit-backdrop-filter: var(--blur-effect);
+  border: 1px solid var(--panel-border);
+  will-change: transform;
+  transform: translate3d(0,0,0);
 }
 
 .plot-panel {
-  flex:1;min-width:500px;
-  position:relative
+  flex: 1;
+  min-width: 500px;
+  position: relative;
 }
 
 .settings-panel {
-  width:180px;min-width:180px;
-  transition:transform var(--anim-fast);
-  transform-origin:left
+  width: 180px;
+  min-width: 180px;
+  transition: transform var(--anim-fast);
+  transform-origin: left;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-header {
-  width:100%;text-align:center;
-  margin-bottom:16px;padding:8px 0;
-  height:40px;display:flex;
-  align-items:center;
-  justify-content:center
+  width: 100%;
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 8px 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 [data-tooltip] {cursor:help}
@@ -138,8 +163,24 @@ body {
 .setting-row,#sensitivity-plot-container,
 .action-buttons {-webkit-app-region:no-drag}
 
-.settings-container {flex:1;overflow-y:auto}
-.action-buttons {margin-top:auto}
+.settings-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.action-buttons {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 24px 0 0;
+  position: relative;
+}
 
 .settings-toggle {
   position:absolute;
@@ -328,8 +369,6 @@ body {
   gap: 8px;
   margin-bottom: 16px;
   position: relative;
-  animation: slideInRight .5s ease-out backwards;
-  animation-delay: calc(var(--n,0) * .1s);
   width: 100%;
 }
 
@@ -404,18 +443,19 @@ body {
   height: 1px;
   background: linear-gradient(90deg,transparent,var(--border-glow),transparent);
   animation: glow 16s var(--anim) infinite;
-  transform-origin: center;
 }
 
 #reset-btn,#export-btn {
-  flex: 1;
-  height: var(--button-height);
+  width: 75px;
+  height: 36px;
   border: 0;
   border-radius: var(--corner-radius);
   font: 600 14px sans-serif;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all .2s ease;
+  padding: 0;
+  flex: none;
 }
 
 #reset-btn {background:var(--grad-error)}
