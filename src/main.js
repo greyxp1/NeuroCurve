@@ -209,14 +209,6 @@ const setupEventListeners = () => {
         button.disabled = false;
     };
 
-    $('#export-btn').onclick = async () => {
-        try {
-            const points = await invoke('calculate_curve', {settings});
-            await navigator.clipboard.writeText(
-                points.slice(1).map(([x, y]) => `${x},${formatNumber(y)}`).join(';\n')
-            );
-        } catch (error) { console.error('Export failed:', error); }
-    };
 
     $('#apply-btn').onclick = async () => {
         try {

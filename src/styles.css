@@ -393,7 +393,7 @@ body {
   animation: glow 16s var(--anim) infinite;
 }
 
-#reset-btn,#export-btn,#apply-btn {
+#reset-btn,#apply-btn {
   width: 75px;
   height: 36px;
   border: 0;
@@ -407,10 +407,8 @@ body {
 }
 
 #reset-btn {background:var(--grad-error)}
-#export-btn {background:var(--grad-primary)}
 #apply-btn {background:linear-gradient(45deg,#28c940 0%,#6bff8c 50%,#28c940 100%)}
 
-#reset-btn:hover,#export-btn:hover,#apply-btn:hover {transform:translateY(-1px);filter:brightness(1.1)}
+#reset-btn:hover,#apply-btn:hover {transform:translateY(-1px);filter:brightness(1.1)}
 #reset-btn:hover {box-shadow:0 8px 16px -4px rgba(255,77,77,.2)}
-#export-btn:hover {box-shadow:0 8px 16px -4px rgba(77,159,255,.2)}
 #apply-btn:hover {box-shadow:0 8px 16px -4px rgba(40,201,64,.2)}
