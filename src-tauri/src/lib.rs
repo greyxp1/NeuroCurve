@@ -3,11 +3,6 @@ use std::{collections::HashMap, sync::OnceLock, fs, path::Path, process::Command
 use tauri::Manager;
 use serde_json::{json, to_string_pretty};
 
-// Import Tauri plugins
-extern crate tauri_plugin_dialog;
-extern crate tauri_plugin_os;
-extern crate tauri_plugin_shell;
-
 const INPUT_RANGE: usize = 257;
 const DEFAULTS: [(&str, f64); 5] = [("min_sens", 0.6), ("max_sens", 3.0), ("range", 40.0), ("growth_base", 1.05), ("offset", 8.0)];
 
@@ -73,59 +68,110 @@ fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
 }
 
 #[tauri::command]
-fn apply_to_raw_accel(settings: Settings, raw_accel_path: Option<String>) -> Result<(), String> {
+#[allow(non_snake_case)]
+fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), String> {
     // Calculate the curve points
     let points = calculate_curve(settings);
 
     // Format the points for Raw Accel
-    let formatted_points = points.iter()
+    // For the LUT mode, Raw Accel expects an array of floats in the format [x1, y1, x2, y2, ...]
+    let formatted_points: Vec<f64> = points.iter()
         .skip(1) // Skip the first point (0,0)
-        .map(|(x, y)| format!("{},{}", x, y))
-        .collect::<Vec<String>>()
-        .join(";");
+        .flat_map(|(x, y)| vec![*x, *y])
+        .collect();
 
     // Determine the Raw Accel directory
-    let raw_accel_dir = match raw_accel_path {
-        Some(path) => path,
-        None => return Err("Raw Accel path not provided".to_string()),
-    };
+    println!("Raw Accel path: {}", rawAccelPath);
+    println!("Path length: {}", rawAccelPath.len());
+    println!("Path is empty: {}", rawAccelPath.is_empty());
+    println!("Path bytes: {:?}", rawAccelPath.as_bytes());
+
+    // Check if the path is empty
+    if rawAccelPath.is_empty() {
+        return Err("Raw Accel path is empty".to_string());
+    }
+
+    let raw_accel_dir = rawAccelPath;
+    println!("Using Raw Accel directory: {}", raw_accel_dir);
 
     // Create a temporary settings file
     let settings_path = Path::new(&raw_accel_dir).join("settings.json");
 
     // Create a basic Raw Accel settings JSON with our curve using serde_json
     let raw_accel_json = json!({
-        "version": "1.6.0",
-        "accelMode": "classic",
-        "sensitivity": 1.0,
-        "outputRate": 1000,
-        "speedCap": 0.0,
-        "inputOffset": 0.0,
-        "inputScale": 0.0,
-        "legacyOffset": 0.0,
-        "legacyScale": 0.0,
-        "legacyCap": 0.0,
-        "legacyGamma": 3.0,
-        "legacyExponent": 0.0,
-        "legacyRotationAngle": 0.0,
-        "legacyLimitingType": "none",
-        "legacyScaling": "linear",
-        "legacyXY": "none",
-        "customCurve": formatted_points,
-        "customCurveMode": "points",
-        "activeDPI": 1600,
-        "dpiOverride": false,
-        "directionalSettings": {
-            "yxRatio": 1.0,
-            "xyRotation": 0.0
+        "version": "1.6.1",
+        "defaultDeviceConfig": {
+            "disable": false,
+            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 0,
+            "Polling rate Hz (keep at 0 for automatic adjustment)": 0
         },
-        "bypassCompatibilityCheck": false,
-        "writeMode": "driver",
-        "showLastMouseMove": false,
-        "lastMouseMove": {
-            "x": 0,
-            "y": 0
-        }
+        "profiles": [
+            {
+                "name": "NeuroCurve",
+                "Whole/combined accel (set false for 'by component' mode)": true,
+                "lpNorm": 2.0,
+                "Stretches domain for horizontal vs vertical inputs": {
+                    "x": 1.0,
+                    "y": 1.0
+                },
+                "Stretches accel range for horizontal vs vertical inputs": {
+                    "x": 1.0,
+                    "y": 1.0
+                },
+                "Whole or horizontal accel parameters": {
+                    "mode": "lut",
+                    "Gain / Velocity": false,
+                    "inputOffset": 0.0,
+                    "outputOffset": 0.0,
+                    "acceleration": 0.005,
+                    "decayRate": 0.1,
+                    "growthRate": 1.0,
+                    "motivity": 1.5,
+                    "exponentClassic": 2.0,
+                    "scale": 1.0,
+                    "exponentPower": 0.05,
+                    "limit": 1.5,
+                    "midpoint": 5.0,
+                    "smooth": 0.5,
+                    "Cap / Jump": {
+                        "x": 15.0,
+                        "y": 1.5
+                    },
+                    "Cap mode": "output",
+                    "data": formatted_points
+                },
+                "Vertical accel parameters": {
+                    "mode": "noaccel",
+                    "Gain / Velocity": true,
+                    "inputOffset": 0.0,
+                    "outputOffset": 0.0,
+                    "acceleration": 0.005,
+                    "decayRate": 0.1,
+                    "growthRate": 1.0,
+                    "motivity": 1.5,
+                    "exponentClassic": 2.0,
+                    "scale": 1.0,
+                    "exponentPower": 0.05,
+                    "limit": 1.5,
+                    "midpoint": 5.0,
+                    "smooth": 0.5,
+                    "Cap / Jump": {
+                        "x": 15.0,
+                        "y": 1.5
+                    },
+                    "Cap mode": "output",
+                    "data": []
+                },
+                "Sensitivity multiplier": 1.0,
+                "Y/X sensitivity ratio (vertical sens multiplier)": 1.0,
+                "L/R sensitivity ratio (left sens multiplier)": 1.0,
+                "U/D sensitivity ratio (up sens multiplier)": 1.0,
+                "Degrees of rotation": 0.0,
+                "Degrees of angle snapping": 10.0,
+                "Input Speed Cap": 0.0
+            }
+        ],
+        "devices": []
     });
 
     let raw_accel_settings = to_string_pretty(&raw_accel_json)
@@ -137,6 +183,17 @@ fn apply_to_raw_accel(settings: Settings, raw_accel_path: Option<String>) -> Res
 
     // Run the writer.exe to apply the settings
     let writer_path = Path::new(&raw_accel_dir).join("writer.exe");
+    println!("Looking for writer at: {}", writer_path.display());
+
+    // List files in the directory
+    println!("Files in directory:");
+    if let Ok(entries) = fs::read_dir(&raw_accel_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                println!("  {}", entry.path().display());
+            }
+        }
+    }
 
     if !writer_path.exists() {
         return Err(format!("Writer executable not found at: {}", writer_path.display()));

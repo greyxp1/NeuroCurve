@@ -230,11 +230,25 @@ const setupEventListeners = () => {
                 title: 'Select Raw Accel Directory'
             });
 
+            console.log('Selected directory:', selected);
+
             if (selected) {
                 // Apply the curve to Raw Accel
+                console.log('Type of selected:', typeof selected);
+
+                // Make sure we're passing a string
+                const path = Array.isArray(selected) ? selected[0] : selected;
+                console.log('Path to send:', path);
+                console.log('JSON.stringify(path):', JSON.stringify(path));
+
+                // Try with explicit string conversion
+                const pathStr = String(path);
+                console.log('String(path):', pathStr);
+
+                // Try with a direct string
                 await invoke('apply_to_raw_accel', {
                     settings,
-                    raw_accel_path: selected
+                    rawAccelPath: pathStr
                 });
 
                 // Show a success message
