@@ -218,6 +218,37 @@ const setupEventListeners = () => {
         } catch (error) { console.error('Export failed:', error); }
     };
 
+    $('#apply-btn').onclick = async () => {
+        try {
+            const button = $('#apply-btn');
+            button.disabled = true;
+
+            // Show a dialog to select the Raw Accel directory
+            const selected = await window.__TAURI__.dialog.open({
+                directory: true,
+                multiple: false,
+                title: 'Select Raw Accel Directory'
+            });
+
+            if (selected) {
+                // Apply the curve to Raw Accel
+                await invoke('apply_to_raw_accel', {
+                    settings,
+                    raw_accel_path: selected
+                });
+
+                // Show a success message
+                alert('Curve applied to Raw Accel successfully!');
+            }
+
+            button.disabled = false;
+        } catch (error) {
+            console.error('Apply to Raw Accel failed:', error);
+            alert(`Failed to apply curve: ${error}`);
+            $('#apply-btn').disabled = false;
+        }
+    };
+
     $('#titlebar-minimize').onclick = () => appWindow.minimize();
     $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();
     $('#titlebar-close').onclick = () => appWindow.close();
