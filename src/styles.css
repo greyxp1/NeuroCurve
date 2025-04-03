@@ -122,36 +122,6 @@ body {
   justify-content: center;
 }
 
-[data-tooltip] {cursor:help}
-
-.floating-tooltip {
-  position:absolute;
-  color:var(--text-primary);
-  padding:6px 10px;
-  border-radius:6px;
-  font:400 12px 'Inter',system-ui,-apple-system,sans-serif;
-  letter-spacing:.2px;
-  white-space:pre-line;
-  z-index:2147483647;
-  pointer-events:none;
-  width:210px;text-align:center;
-  border:1px solid var(--primary);
-  box-shadow:0 0 5px rgba(77,159,255,.3),
-             0 0 10px rgba(77,159,255,.2),
-             inset 0 0 5px rgba(77,159,255,.1);
-  transform-origin:left center;
-  opacity:0;visibility:hidden;
-  transition:all .15s ease-out;
-  backdrop-filter:var(--blur-effect);
-  -webkit-backdrop-filter:var(--blur-effect);
-  transform:translateX(-10px)
-}
-
-.floating-tooltip.visible {
-  opacity:1;visibility:visible;
-  transform:translateX(0)
-}
-
 .drag-region {
   position:fixed;
   -webkit-app-region:drag;
