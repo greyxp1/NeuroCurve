@@ -224,8 +224,8 @@ const cfg = {
         }
     },
     settings: {
-        min_sens: {label: 'Base Sensitivity', tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', min: 0.1, max: 2, step: 0.001},
-        max_sens: {label: 'Maximum Sensitivity', tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', min: 0.1, max: 5, step: 0.001},
+        min_sens: {label: 'Base Sensitivity', tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', min: 0.1, max: 2, step: 0.05},
+        max_sens: {label: 'Maximum Sensitivity', tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', min: 0.1, max: 5, step: 0.05},
         offset: {label: 'Speed Threshold', tooltip: 'Mouse movement speed (counts/ms) at which acceleration begins', min: 0, max: 50, step: 1},
         range: {label: 'Acceleration Range', tooltip: 'The speed range (counts/ms) over which sensitivity scales from base to maximum', min: 10, max: 200, step: 1},
         growth_base: {label: 'Acceleration Rate', tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', min: 1, max: 1.5, step: 0.001}
@@ -245,9 +245,7 @@ class SettingsManager {
             const row = template.content.cloneNode(true);
             const elements = {
                 label: row.querySelector('.setting-label'),
-                input: row.querySelector('.setting-value'),
-                minus: row.querySelector('.minus'),
-                plus: row.querySelector('.plus')
+                input: row.querySelector('.setting-value')
             };
 
             elements.label.textContent = info.label;
@@ -258,7 +256,6 @@ class SettingsManager {
                 step: info.step
             });
 
-            elements.minus.dataset.key = elements.plus.dataset.key = key;
             $('#all-settings').appendChild(row);
         });
     }
@@ -280,22 +277,6 @@ class SettingsManager {
                 if (!isNaN(value)) {
                     settings.values[key] = value;
                 }
-            };
-        });
-
-        // Plus/minus button handlers
-        document.querySelectorAll('.value-adjust').forEach(button => {
-            button.onclick = () => {
-                const key = button.dataset.key;
-                const info = cfg.settings[key];
-                const input = $(`#${key}-value`);
-                const currentValue = parseFloat(input.value);
-                const step = parseFloat(info.step);
-                const delta = button.classList.contains('plus') ? step : -step;
-
-                const newValue = Math.round((currentValue + delta) / step) * step;
-                input.value = formatNumber(newValue);
-                this.updateValue(key, newValue);
             };
         });
     }

@@ -390,36 +390,14 @@ body {
 }
 
 .value-control {
-  width: 140px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
-
-.value-adjust {
-  width: var(--input-h);
-  height: var(--input-h);
-  background: var(--element-bg);
-  border: 0;
-  border-radius: 4px;
-  color: var(--text-color);
-  transition: all .2s ease;
-  cursor: pointer;
-}
-
-.value-adjust:hover {
-  background: var(--element-bg-hover);
-  color: var(--text-color);
-  transform: translateY(-1px);
-}
-
-.value-adjust:active {transform:scale(.95);background:var(--element-bg-active)}
 
 .setting-value {
-  flex: 1;
-  min-width: 40px;
-  max-width: 50px;
+  width: 100%;
   padding: 8px;
   font: 500 13px 'JetBrains Mono',monospace;
   text-align: center;
