@@ -480,6 +480,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initializeSettings();
     }
 
+    // Ensure the Raw Accel tab is active by default
+    document.querySelector('.tab-button[data-tab="raw-accel"]').classList.add('active');
+    document.getElementById('raw-accel-tab').classList.add('active');
+    document.querySelector('.tab-button[data-tab="curve"]').classList.remove('active');
+    document.getElementById('curve-tab').classList.remove('active');
+
     setupEventListeners();
     updatePlotThrottled();
 });
