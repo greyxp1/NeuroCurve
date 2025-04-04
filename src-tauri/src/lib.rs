@@ -4,19 +4,119 @@ use tauri::Manager;
 use serde_json::{json, to_string_pretty, from_str};
 
 const INPUT_RANGE: usize = 257;
-const DEFAULTS: [(&str, f64); 5] = [("min_sens", 0.6), ("max_sens", 3.0), ("range", 40.0), ("growth_base", 1.05), ("offset", 8.0)];
+
+// Default values for curve settings
+pub const DEFAULT_MIN_SENS: f64 = 0.6;
+pub const DEFAULT_MAX_SENS: f64 = 3.0;
+pub const DEFAULT_RANGE: f64 = 40.0;
+pub const DEFAULT_GROWTH_BASE: f64 = 1.05;
+pub const DEFAULT_OFFSET: f64 = 8.0;
+
+// Default values for Raw Accel settings
+pub const DEFAULT_DPI: f64 = 1600.0;
+pub const DEFAULT_POLLING_RATE: f64 = 4000.0;
+pub const DEFAULT_SENS_MULTIPLIER: f64 = 1.0;
+pub const DEFAULT_Y_X_RATIO: f64 = 1.0;
+pub const DEFAULT_ROTATION: f64 = 0.0;
+pub const DEFAULT_ANGLE_SNAPPING: f64 = 10.0;
+
+// UI constraints for settings
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SettingConstraint {
+    pub label: String,
+    pub min: f64,
+    pub max: f64,
+    pub step: f64,
+    pub default: f64,
+}
+
+// All default settings and constraints in one place
+#[derive(Serialize, Deserialize, Clone)]
+pub struct DefaultSettings {
+    pub curve_settings: HashMap<String, SettingConstraint>,
+    pub raw_accel_settings: HashMap<String, SettingConstraint>,
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings { pub values: HashMap<String, f64> }
 
 impl Default for Settings {
-    fn default() -> Self { Settings { values: DEFAULTS.iter().map(|(k, v)| (k.to_string(), *v)).collect() } }
+    fn default() -> Self {
+        let mut values = HashMap::new();
+        values.insert("min_sens".to_string(), DEFAULT_MIN_SENS);
+        values.insert("max_sens".to_string(), DEFAULT_MAX_SENS);
+        values.insert("range".to_string(), DEFAULT_RANGE);
+        values.insert("growth_base".to_string(), DEFAULT_GROWTH_BASE);
+        values.insert("offset".to_string(), DEFAULT_OFFSET);
+        Settings { values }
+    }
 }
 
 static DEFAULT_SETTINGS: OnceLock<Settings> = OnceLock::new();
 
 #[tauri::command]
 fn get_default_settings() -> Settings { DEFAULT_SETTINGS.get_or_init(Settings::default).clone() }
+
+impl Default for DefaultSettings {
+    fn default() -> Self {
+        // Create an ordered HashMap for curve settings
+        let mut curve_settings = HashMap::new();
+
+        // Define the order of curve settings
+        let curve_setting_keys = [
+            ("min_sens", "Base Sens", 0.1, 2.0, 0.05, DEFAULT_MIN_SENS),
+            ("max_sens", "Max Sens", 0.1, 5.0, 0.05, DEFAULT_MAX_SENS),
+            ("offset", "Threshold", 0.0, 50.0, 1.0, DEFAULT_OFFSET),
+            ("range", "Acceleration Range", 10.0, 200.0, 1.0, DEFAULT_RANGE),
+            ("growth_base", "Acceleration Rate", 1.0, 1.5, 0.001, DEFAULT_GROWTH_BASE),
+        ];
+
+        // Add curve settings in order
+        for (key, label, min, max, step, default) in curve_setting_keys {
+            curve_settings.insert(key.to_string(), SettingConstraint {
+                label: label.to_string(),
+                min,
+                max,
+                step,
+                default,
+            });
+        }
+
+        // Create an ordered HashMap for Raw Accel settings
+        let mut raw_accel_settings = HashMap::new();
+
+        // Define the order of Raw Accel settings
+        let raw_accel_setting_keys = [
+            ("dpi", "DPI", 0.0, 64000.0, 1.0, DEFAULT_DPI),
+            ("polling_rate", "Polling Rate", 0.0, 8000.0, 125.0, DEFAULT_POLLING_RATE),
+            ("sens_multiplier", "Sens Multiplier", 0.01, 10.0, 0.01, DEFAULT_SENS_MULTIPLIER),
+            ("y_x_ratio", "Y/X Ratio", 0.01, 10.0, 0.01, DEFAULT_Y_X_RATIO),
+            ("rotation", "Rotation", -180.0, 180.0, 1.0, DEFAULT_ROTATION),
+            ("angle_snapping", "Angle Snap", 0.0, 45.0, 1.0, DEFAULT_ANGLE_SNAPPING),
+        ];
+
+        // Add Raw Accel settings in order
+        for (key, label, min, max, step, default) in raw_accel_setting_keys {
+            raw_accel_settings.insert(key.to_string(), SettingConstraint {
+                label: label.to_string(),
+                min,
+                max,
+                step,
+                default,
+            });
+        }
+
+        DefaultSettings {
+            curve_settings,
+            raw_accel_settings,
+        }
+    }
+}
+
+#[tauri::command]
+fn get_all_default_settings() -> DefaultSettings {
+    DefaultSettings::default()
+}
 
 fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: f64, max_sens: f64, offset: f64, plateau: bool) -> Vec<f64> {
     if n == 0 || range <= 0.0 { return vec![0.0; n]; }
@@ -57,7 +157,16 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
 #[tauri::command]
 fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
     let get = |k: &str| settings.values.get(k).copied()
-        .unwrap_or_else(|| DEFAULTS.iter().find(|(key, _)| *key == k).map(|(_, v)| *v).unwrap_or(0.0));
+        .unwrap_or_else(|| {
+            match k {
+                "min_sens" => DEFAULT_MIN_SENS,
+                "max_sens" => DEFAULT_MAX_SENS,
+                "range" => DEFAULT_RANGE,
+                "growth_base" => DEFAULT_GROWTH_BASE,
+                "offset" => DEFAULT_OFFSET,
+                _ => 0.0
+            }
+        });
 
     let params = ["range", "offset", "min_sens", "max_sens", "growth_base"]
         .map(|k| get(k));
@@ -90,12 +199,12 @@ impl Default for AppSettings {
         AppSettings {
             curve_settings: Settings::default(),
             raw_accel_settings: RawAccelSettings {
-                dpi: 1600.0,
-                polling_rate: 4000.0,
-                sens_multiplier: 1.0,
-                y_x_ratio: 1.0,
-                rotation: 0.0,
-                angle_snapping: 10.0,
+                dpi: DEFAULT_DPI,
+                polling_rate: DEFAULT_POLLING_RATE,
+                sens_multiplier: DEFAULT_SENS_MULTIPLIER,
+                y_x_ratio: DEFAULT_Y_X_RATIO,
+                rotation: DEFAULT_ROTATION,
+                angle_snapping: DEFAULT_ANGLE_SNAPPING,
             },
             raw_accel_path: String::new(),
         }
@@ -245,7 +354,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_default_settings, calculate_curve, apply_to_raw_accel, save_app_settings, load_app_settings])
+        .invoke_handler(tauri::generate_handler![get_default_settings, get_all_default_settings, calculate_curve, apply_to_raw_accel, save_app_settings, load_app_settings])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -117,44 +117,48 @@ const createChart = (points, maxValue) => {
     chart.animationFrame = requestAnimationFrame(animate);
 };
 
-const cfg = {
-    chart: {
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            animation: {duration: 1200, easing: 'easeInOutQuart'},
-            plugins: {legend: {display: false}, tooltip: false},
-            elements: {point: {radius: 0}, line: {tension: 0.4, borderWidth: 2.5}},
-            devicePixelRatio: window.devicePixelRatio || 1,
-            scales: {
-                x: {
-                    grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
-                    border: {display: false}, position: 'bottom',
-                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}, maxTicksLimit: 10},
-                    title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255,255,255,0.6)'}
-                },
-                y: {
-                    grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
-                    border: {display: false}, position: 'left', beginAtZero: true,
-                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}},
-                    title: {display: true, text: 'Sensitivity Multiplier', color: 'rgba(255,255,255,0.6)'}
-                }
+// Chart configuration
+const chartConfig = {
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: {duration: 1200, easing: 'easeInOutQuart'},
+        plugins: {legend: {display: false}, tooltip: false},
+        elements: {point: {radius: 0}, line: {tension: 0.4, borderWidth: 2.5}},
+        devicePixelRatio: window.devicePixelRatio || 1,
+        scales: {
+            x: {
+                grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
+                border: {display: false}, position: 'bottom',
+                ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}, maxTicksLimit: 10},
+                title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255,255,255,0.6)'}
+            },
+            y: {
+                grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
+                border: {display: false}, position: 'left', beginAtZero: true,
+                ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}},
+                title: {display: true, text: 'Sensitivity Multiplier', color: 'rgba(255,255,255,0.6)'}
             }
         }
-    },
-    curveSettings: {
-        min_sens: {label: 'Base Sens', min: 0.1, max: 2, step: 0.05},
-        max_sens: {label: 'Max Sens', min: 0.1, max: 5, step: 0.05},
-        offset: {label: 'Threshold', min: 0, max: 50, step: 1},
-        range: {label: 'Acceleration Range', min: 10, max: 200, step: 1},
-        growth_base: {label: 'Acceleration Rate', min: 1, max: 1.5, step: 0.001}
-    },
-    rawAccelSettings: {
-        dpi: {label: 'DPI', min: 0, max: 64000, default: 1600},
-        polling_rate: {label: 'Polling Rate', min: 0, max: 8000, step: 125, default: 4000},
-        sens_multiplier: {label: 'Sens Multiplier', min: 0.01, max: 10, default: 1.0},
-        y_x_ratio: {label: 'Y/X Ratio', min: 0.01, max: 10, default: 1.0},
-        rotation: {label: 'Rotation', min: -180, max: 180, default: 0.0},
-        angle_snapping: {label: 'Angle Snap', min: 0, max: 45, default: 10.0}
+    }
+};
+
+// Settings configuration - will be populated from backend
+let cfg = {
+    chart: chartConfig,
+    curveSettings: {},
+    rawAccelSettings: {}
+};
+
+// Load all default settings from the backend
+const loadDefaultConfigurations = async () => {
+    try {
+        const defaultSettings = await invoke('get_all_default_settings');
+        cfg.curveSettings = defaultSettings.curve_settings;
+        cfg.rawAccelSettings = defaultSettings.raw_accel_settings;
+        return true;
+    } catch (error) {
+        console.error('Failed to load default settings:', error);
+        return false;
     }
 };
 
@@ -232,7 +236,14 @@ class SettingsManager {
 
     resetRawAccelSettings() {
         // Reset all Raw Accel settings to their default values
-        Object.entries(cfg.rawAccelSettings).forEach(([key, info]) => {
+        // Define the order of Raw Accel settings
+        const rawAccelSettingOrder = ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'];
+
+        // Reset settings in the specified order
+        rawAccelSettingOrder.forEach(key => {
+            const info = cfg.rawAccelSettings[key];
+            if (!info) return;
+
             const defaultValue = info.default;
             this.rawAccelSettings[key] = defaultValue;
 
@@ -247,7 +258,14 @@ class SettingsManager {
 
         if (!template || !curveSettingsContainer) return;
 
-        Object.entries(cfg.curveSettings).forEach(([key, info]) => {
+        // Define the order of curve settings
+        const curveSettingOrder = ['min_sens', 'max_sens', 'offset', 'range', 'growth_base'];
+
+        // Create settings in the specified order
+        curveSettingOrder.forEach(key => {
+            const info = cfg.curveSettings[key];
+            if (!info) return;
+
             const row = template.content.cloneNode(true),
                   label = row.querySelector('.setting-label'),
                   input = row.querySelector('.setting-value');
@@ -277,7 +295,14 @@ class SettingsManager {
 
         if (!template || !rawAccelSettingsContainer) return;
 
-        Object.entries(cfg.rawAccelSettings).forEach(([key, info]) => {
+        // Define the order of Raw Accel settings
+        const rawAccelSettingOrder = ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'];
+
+        // Create settings in the specified order
+        rawAccelSettingOrder.forEach(key => {
+            const info = cfg.rawAccelSettings[key];
+            if (!info) return;
+
             const row = template.content.cloneNode(true),
                   label = row.querySelector('.setting-label'),
                   input = row.querySelector('.setting-value');
@@ -470,6 +495,10 @@ document.addEventListener('visibilitychange', () => {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     applyWebView2Optimizations();
+
+    // Load default configurations from backend
+    await loadDefaultConfigurations();
+
     settingsManager = new SettingsManager();
 
     // Try to load saved settings first
