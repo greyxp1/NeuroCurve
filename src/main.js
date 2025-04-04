@@ -154,7 +154,7 @@ const cfg = {
         sens_multiplier: {label: 'Sens Multiplier', min: 0.01, max: 10, default: 1.0},
         y_x_ratio: {label: 'Y/X Ratio', min: 0.01, max: 10, default: 1.0},
         rotation: {label: 'Rotation', min: -180, max: 180, default: 0.0},
-        angle_snapping: {label: 'Angle Snap', min: 0, max: 100, default: 10.0}
+        angle_snapping: {label: 'Angle Snap', min: 0, max: 45, default: 10.0}
     }
 };
 
@@ -228,6 +228,17 @@ class SettingsManager {
             console.error('Failed to save settings:', error);
             return false;
         }
+    }
+
+    resetRawAccelSettings() {
+        // Reset all Raw Accel settings to their default values
+        Object.entries(cfg.rawAccelSettings).forEach(([key, info]) => {
+            const defaultValue = info.default;
+            this.rawAccelSettings[key] = defaultValue;
+
+            const input = $(`#${key}-value`);
+            if (input) input.value = formatNumber(defaultValue);
+        });
     }
 
     initCurveSettings() {
@@ -362,11 +373,20 @@ const setupEventListeners = () => {
     $('#reset-btn').onclick = async () => {
         const button = $('#reset-btn');
         button.disabled = true;
+
+        // Reset curve settings
         settings = await invoke('get_default_settings');
         Object.entries(settings.values).forEach(([key, value]) => {
             const input = $(`#${key}-value`);
             if (input) input.value = formatNumber(value);
         });
+
+        // Reset Raw Accel settings to defaults
+        settingsManager.resetRawAccelSettings();
+
+        // Save the reset settings
+        await settingsManager.saveSettings();
+
         updatePlotThrottled(true);
         button.disabled = false;
     };
