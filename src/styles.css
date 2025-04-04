@@ -350,32 +350,67 @@ body {
   transform: scale(1.12);
 }
 
-/* Settings styles */
-.settings-section {
-  margin-bottom: 8px;
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
   width: 100%;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
 }
 
-.settings-section h3 {
-  font: 600 12px sans-serif;
-  color: var(--text-color);
-  margin: 0 0 6px 0;
-  padding: 4px 0;
-  border-radius: 4px;
-  text-align: center;
-  background: rgba(77, 159, 255, 0.1);
+.tab-button {
+  flex: 1;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: var(--text-color-dim);
+  font: 500 13px sans-serif;
+  cursor: pointer;
+  transition: all var(--anim-fast);
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
-.settings-section h3::after {
+.tab-button:hover {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-button.active {
+  color: var(--text-secondary);
+  background: rgba(77, 159, 255, 0.15);
+}
+
+.tab-button.active::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  height: 2px;
+  background: var(--primary);
+  animation: glow 8s ease infinite;
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  width: 100%;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Settings styles */
+.settings-section {
+  margin-bottom: 8px;
+  width: 100%;
 }
 
 .setting-row {

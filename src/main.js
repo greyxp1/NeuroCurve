@@ -370,6 +370,20 @@ const initializeSettings = async () => {
 };
 
 const setupEventListeners = () => {
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all tabs and buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button and corresponding content
+            const tabName = button.getAttribute('data-tab');
+            button.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        });
+    });
+
     $('#reset-btn').onclick = async () => {
         const button = $('#reset-btn');
         button.disabled = true;

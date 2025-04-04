@@ -13,20 +13,26 @@
       <div class="main-content hardware-accelerated">
         <div class="settings-panel hardware-accelerated">
           <div class="panel-header"><h2>Settings</h2></div>
+          <div class="tab-navigation">
+            <button class="tab-button active" data-tab="curve">Curve</button>
+            <button class="tab-button" data-tab="raw-accel">Raw Accel</button>
+          </div>
           <div class="settings-container">
-            <div class="settings-section">
-              <h3>Curve</h3>
-              <div id="curve-settings"></div>
+            <div class="tab-content active" id="curve-tab">
+              <div class="settings-section">
+                <div id="curve-settings"></div>
+              </div>
             </div>
-            <div class="settings-section">
-              <h3>Raw Accel</h3>
-              <div id="raw-accel-settings">
-                <div class="setting-row path-row">
-                  <label class="setting-label">Raw Accel Path</label>
-                  <button id="select-path-btn">Select</button>
-                </div>
-                <div class="path-display" id="path-display">
-                  <span>No directory selected</span>
+            <div class="tab-content" id="raw-accel-tab">
+              <div class="settings-section">
+                <div id="raw-accel-settings">
+                  <div class="setting-row path-row">
+                    <label class="setting-label">Raw Accel Path</label>
+                    <button id="select-path-btn">Select</button>
+                  </div>
+                  <div class="path-display" id="path-display">
+                    <span>No directory selected</span>
+                  </div>
                 </div>
               </div>
             </div>
