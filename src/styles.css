@@ -1,27 +1,18 @@
 :root {
-  /* App window corner radius */
   --window-radius: 12px;
-
-  /* Base colors */
   --bg-primary: rgba(10, 10, 10, 0.5);
   --text-primary: #e1e1e1;
   --text-secondary: #fff;
   --primary: #4d9fff;
   --error: #ff4d4d;
   --border: #2a2a2a;
-
-  /* Layout */
   --corner-radius: 12px;
   --button-height: 40px;
   --panel-bg: rgba(12,12,12,.85);
   --panel-border: rgba(255,255,255,.02);
   --blur-effect: blur(8px) saturate(105%);
-
-  /* Animations */
   --anim-fast: .2s ease;
   --anim-normal: .3s ease;
-
-  /* Settings panel */
   --element-bg: rgba(255,255,255,.1);
   --element-bg-hover: rgba(255,255,255,.15);
   --element-bg-active: rgba(255,255,255,.2);
@@ -41,7 +32,6 @@ html {
   background: transparent;height:100vh;margin:0;padding:0;
   border-radius: var(--window-radius);
   overflow: hidden;
-  /* Ensure content is clipped to rounded corners */
   clip-path: inset(0 0 0 0 round var(--window-radius));
 }
 
@@ -222,7 +212,6 @@ body {
     will-change: transform, opacity;
 }
 
-/* Animations */
 @keyframes grad {
     0% { background-position: 200% 0 }
     100% { background-position: -200% 0 }
@@ -280,7 +269,6 @@ body {
     animation: glow 16s ease infinite;
 }
 
-/* Plot styles */
 #sensitivity-plot-container {
   flex: 1;
   position: relative;
@@ -302,7 +290,6 @@ body {
   display: block;
 }
 
-/* Window controls */
 .window-controls {
   position: absolute;
   top: 16px;
@@ -350,7 +337,6 @@ body {
   transform: scale(1.12);
 }
 
-/* Tab Navigation */
 .tab-navigation {
   display: flex;
   width: 100%;
@@ -396,7 +382,6 @@ body {
   animation: glow 8s ease infinite;
 }
 
-/* Tab Content */
 .tab-content {
   display: none;
   width: 100%;
@@ -407,7 +392,6 @@ body {
   display: block;
 }
 
-/* Settings styles */
 .settings-section {
   margin-bottom: 8px;
   width: 100%;
@@ -435,8 +419,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Setting controls removed in favor of grid layout */
 
 #select-path-btn {
   height: 24px;
