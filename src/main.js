@@ -14,8 +14,7 @@ const updatePlot = async (animate = true) => {
           maxY = Math.max(...points.map(p => p[1])) + 0.5,
           maxX = Math.max(...points.map(p => p[0]));
     if (chart) {
-        const data = points.map(p => p[1]);
-        chart.data.datasets[0].data = chart.data.datasets[1].data = data;
+        chart.data.datasets[0].data = chart.data.datasets[1].data = points.map(p => p[1]);
         chart.data.labels = points.map(p => parseFloat(p[0]));
         chart.options.scales.y.max = maxY;
         chart.options.scales.x.max = maxX;
@@ -55,8 +54,7 @@ const chartAreaBorder = {
 };
 
 const createChart = (points, maxValue) => {
-    const maxX = Math.max(...points.map(p => p[0])),
-          data = points.map(p => p[1]),
+    const data = points.map(p => p[1]),
           labels = points.map(p => parseFloat(p[0])),
           baseDataset = {
               data, fill: true, borderWidth: 2, pointRadius: 0, borderColor: 'rgba(77,159,255,0.8)',
@@ -97,7 +95,7 @@ const createChart = (points, maxValue) => {
             scales: {
                 x: {
                     grid: {color: 'rgba(255,255,255,0.05)'}, border: {display: false}, position: 'bottom',
-                    type: 'linear', beginAtZero: true, max: maxX,
+                    type: 'linear', beginAtZero: true, max: Math.max(...points.map(p => p[0])),
                     title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255,255,255,0.6)'}
                 },
                 y: {
@@ -111,6 +109,7 @@ const createChart = (points, maxValue) => {
         plugins: [chartAreaBorder]
     });
 
+    // Start animation loop
     const animate = () => {
         if (!document.hidden) chart.update('none');
         chart.animationFrame = requestAnimationFrame(animate);
@@ -122,33 +121,32 @@ const cfg = {
     chart: {
         options: {
             responsive: true, maintainAspectRatio: false,
-            animation: {duration: 1200, easing: 'easeInOutQuart', delay: ctx => ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 3 : 0},
-            plugins: {legend: {display: false}, tooltip: false, decimation: {enabled: true, algorithm: 'min-max'}},
-            elements: {point: {radius: 0, hoverRadius: 0}, line: {tension: 0.4, borderWidth: 2.5}},
-            transitions: {active: {animation: {duration: 400}}},
+            animation: {duration: 1200, easing: 'easeInOutQuart'},
+            plugins: {legend: {display: false}, tooltip: false},
+            elements: {point: {radius: 0}, line: {tension: 0.4, borderWidth: 2.5}},
             devicePixelRatio: window.devicePixelRatio || 1,
             scales: {
                 x: {
-                    grid: {color: 'rgba(255,255,255,0.03)', drawTicks: false, borderColor: 'transparent', borderWidth: 0, drawOnChartArea: true},
+                    grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
                     border: {display: false}, position: 'bottom',
-                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11, family: 'Inter'}, maxRotation: 0, padding: 10, callback: v => parseFloat(v), maxTicksLimit: 10},
-                    title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255,255,255,0.6)', font: {size: 12, family: 'Inter', weight: '500'}, padding: {top: 15}}
+                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}, maxTicksLimit: 10},
+                    title: {display: true, text: 'Input Speed (counts/ms)', color: 'rgba(255,255,255,0.6)'}
                 },
                 y: {
-                    grid: {color: 'rgba(255,255,255,0.03)', drawTicks: false, borderColor: 'transparent', borderWidth: 0, drawOnChartArea: true},
+                    grid: {color: 'rgba(255,255,255,0.03)', borderColor: 'transparent'},
                     border: {display: false}, position: 'left', beginAtZero: true,
-                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11, family: 'Inter'}, padding: 10, callback: v => parseFloat(v).toFixed(2)},
-                    title: {display: true, text: 'Sensitivity Multiplier', color: 'rgba(255,255,255,0.6)', font: {size: 12, family: 'Inter', weight: '500'}, padding: {bottom: 15}}
+                    ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 11}},
+                    title: {display: true, text: 'Sensitivity Multiplier', color: 'rgba(255,255,255,0.6)'}
                 }
             }
         }
     },
     settings: {
-        min_sens: {label: 'Base Sensitivity', tooltip: 'Your base sensitivity multiplier when moving slowly or below the threshold speed', min: 0.1, max: 2, step: 0.05},
-        max_sens: {label: 'Maximum Sensitivity', tooltip: 'The highest sensitivity multiplier when moving at or above maximum speed', min: 0.1, max: 5, step: 0.05},
-        offset: {label: 'Speed Threshold', tooltip: 'Mouse movement speed (counts/ms) at which acceleration begins', min: 0, max: 50, step: 1},
-        range: {label: 'Acceleration Range', tooltip: 'The speed range (counts/ms) over which sensitivity scales from base to maximum', min: 10, max: 200, step: 1},
-        growth_base: {label: 'Acceleration Rate', tooltip: 'How aggressively sensitivity increases within the acceleration range (higher = more aggressive)', min: 1, max: 1.5, step: 0.001}
+        min_sens: {label: 'Base Sensitivity', min: 0.1, max: 2, step: 0.05},
+        max_sens: {label: 'Maximum Sensitivity', min: 0.1, max: 5, step: 0.05},
+        offset: {label: 'Speed Threshold', min: 0, max: 50, step: 1},
+        range: {label: 'Acceleration Range', min: 10, max: 200, step: 1},
+        growth_base: {label: 'Acceleration Rate', min: 1, max: 1.5, step: 0.001}
     }
 };
 
@@ -209,7 +207,6 @@ const setupEventListeners = () => {
         button.disabled = false;
     };
 
-
     $('#apply-btn').onclick = async () => {
         try {
             const button = $('#apply-btn');
@@ -222,39 +219,26 @@ const setupEventListeners = () => {
                 title: 'Select Raw Accel Directory'
             });
 
-            console.log('Selected directory:', selected);
-
             if (selected) {
                 // Apply the curve to Raw Accel
-                console.log('Type of selected:', typeof selected);
-
-                // Make sure we're passing a string
                 const path = Array.isArray(selected) ? selected[0] : selected;
-                console.log('Path to send:', path);
-                console.log('JSON.stringify(path):', JSON.stringify(path));
 
-                // Try with explicit string conversion
-                const pathStr = String(path);
-                console.log('String(path):', pathStr);
-
-                // Try with a direct string
                 await invoke('apply_to_raw_accel', {
                     settings,
-                    rawAccelPath: pathStr
+                    rawAccelPath: String(path)
                 });
 
-                // Show a success message
                 alert('Curve applied to Raw Accel successfully!');
             }
 
             button.disabled = false;
         } catch (error) {
-            console.error('Apply to Raw Accel failed:', error);
             alert(`Failed to apply curve: ${error}`);
             $('#apply-btn').disabled = false;
         }
     };
 
+    // Window controls
     $('#titlebar-minimize').onclick = () => appWindow.minimize();
     $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();
     $('#titlebar-close').onclick = () => appWindow.close();
@@ -268,16 +252,7 @@ const cleanupChart = () => {
     if (chart) { chart.destroy(); chart = null; }
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
-    applyWebView2Optimizations();
-    new SettingsManager();
-    await initializeSettings();
-    setupEventListeners();
-    updatePlotThrottled();
-});
-
-document.addEventListener('contextmenu', e => e.preventDefault());
-
+// Handle visibility changes for animation performance
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && chart?.animationFrame) {
         cancelAnimationFrame(chart.animationFrame);
@@ -291,4 +266,17 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+// Initialize the application
+document.addEventListener('DOMContentLoaded', async () => {
+    applyWebView2Optimizations();
+    new SettingsManager();
+    await initializeSettings();
+    setupEventListeners();
+    updatePlotThrottled();
+});
+
+// Prevent context menu
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Cleanup on unload
 window.addEventListener('beforeunload', cleanupChart);

@@ -23,15 +23,16 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
 
     let mut result = Vec::with_capacity(n);
     let offset_points = (offset.ceil() as usize).min(n);
-    result.extend(std::iter::repeat(min_sens).take(offset_points));
+    result.resize(offset_points, min_sens);
     if offset_points >= n { return result; }
 
     let remaining = n - offset_points;
     let range_size = range.ceil() as usize;
     let expo_len = if plateau && remaining > range_size { range_size } else { remaining };
     let sens_diff = max_sens - min_sens;
-    let inv_range = range.recip();
+    let inv_range = 1.0 / range;
 
+    result.reserve(expo_len);
     if growth_base <= 1.0 {
         for i in 0..expo_len {
             let t = (i as f64 * inv_range).min(1.0);
@@ -39,7 +40,7 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
             result.push(min_sens + sens_diff * (t2 * (3.0 - 2.0 * t)));
         }
     } else {
-        let base_factor = (growth_base.powf(range) - 1.0).recip();
+        let base_factor = 1.0 / (growth_base.powf(range) - 1.0);
         for i in 0..expo_len {
             let t = ((growth_base.powf(i as f64 * inv_range * range) - 1.0) * base_factor).min(1.0);
             result.push(min_sens + sens_diff * t);
@@ -47,7 +48,7 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
     }
 
     if plateau && remaining > expo_len {
-        result.extend(std::iter::repeat(max_sens).take(remaining - expo_len));
+        result.resize(n, max_sens);
     }
 
     result
@@ -70,34 +71,27 @@ fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
 #[tauri::command]
 #[allow(non_snake_case)]
 fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), String> {
-    // Calculate the curve points
-    let points = calculate_curve(settings);
-
-    // Format the points for Raw Accel
-    // For the LUT mode, Raw Accel expects an array of floats in the format [x1, y1, x2, y2, ...]
-    let formatted_points: Vec<f64> = points.iter()
-        .skip(1) // Skip the first point (0,0)
-        .flat_map(|(x, y)| vec![*x, *y])
-        .collect();
-
-    // Determine the Raw Accel directory
-    println!("Raw Accel path: {}", rawAccelPath);
-    println!("Path length: {}", rawAccelPath.len());
-    println!("Path is empty: {}", rawAccelPath.is_empty());
-    println!("Path bytes: {:?}", rawAccelPath.as_bytes());
-
-    // Check if the path is empty
     if rawAccelPath.is_empty() {
         return Err("Raw Accel path is empty".to_string());
     }
 
-    let raw_accel_dir = rawAccelPath;
-    println!("Using Raw Accel directory: {}", raw_accel_dir);
+    // Calculate the curve points
+    let points = calculate_curve(settings);
+    let formatted_points: Vec<f64> = points.iter()
+        .skip(1) // Skip the first point (0,0)
+        .flat_map(|(x, y)| [*x, *y]) // More efficient than vec!
+        .collect();
 
-    // Create a temporary settings file
-    let settings_path = Path::new(&raw_accel_dir).join("settings.json");
+    // Create settings file path
+    let settings_path = Path::new(&rawAccelPath).join("settings.json");
+    let writer_path = Path::new(&rawAccelPath).join("writer.exe");
 
-    // Create a basic Raw Accel settings JSON with our curve using serde_json
+    // Check if writer exists
+    if !writer_path.exists() {
+        return Err(format!("Writer executable not found at: {}", writer_path.display()));
+    }
+
+    // Create Raw Accel settings JSON
     let raw_accel_json = json!({
         "version": "1.6.1",
         "defaultDeviceConfig": {
@@ -105,103 +99,56 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), St
             "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 0,
             "Polling rate Hz (keep at 0 for automatic adjustment)": 0
         },
-        "profiles": [
-            {
-                "name": "NeuroCurve",
-                "Whole/combined accel (set false for 'by component' mode)": true,
-                "lpNorm": 2.0,
-                "Stretches domain for horizontal vs vertical inputs": {
-                    "x": 1.0,
-                    "y": 1.0
-                },
-                "Stretches accel range for horizontal vs vertical inputs": {
-                    "x": 1.0,
-                    "y": 1.0
-                },
-                "Whole or horizontal accel parameters": {
-                    "mode": "lut",
-                    "Gain / Velocity": false,
-                    "inputOffset": 0.0,
-                    "outputOffset": 0.0,
-                    "acceleration": 0.005,
-                    "decayRate": 0.1,
-                    "growthRate": 1.0,
-                    "motivity": 1.5,
-                    "exponentClassic": 2.0,
-                    "scale": 1.0,
-                    "exponentPower": 0.05,
-                    "limit": 1.5,
-                    "midpoint": 5.0,
-                    "smooth": 0.5,
-                    "Cap / Jump": {
-                        "x": 15.0,
-                        "y": 1.5
-                    },
-                    "Cap mode": "output",
-                    "data": formatted_points
-                },
-                "Vertical accel parameters": {
-                    "mode": "noaccel",
-                    "Gain / Velocity": true,
-                    "inputOffset": 0.0,
-                    "outputOffset": 0.0,
-                    "acceleration": 0.005,
-                    "decayRate": 0.1,
-                    "growthRate": 1.0,
-                    "motivity": 1.5,
-                    "exponentClassic": 2.0,
-                    "scale": 1.0,
-                    "exponentPower": 0.05,
-                    "limit": 1.5,
-                    "midpoint": 5.0,
-                    "smooth": 0.5,
-                    "Cap / Jump": {
-                        "x": 15.0,
-                        "y": 1.5
-                    },
-                    "Cap mode": "output",
-                    "data": []
-                },
-                "Sensitivity multiplier": 1.0,
-                "Y/X sensitivity ratio (vertical sens multiplier)": 1.0,
-                "L/R sensitivity ratio (left sens multiplier)": 1.0,
-                "U/D sensitivity ratio (up sens multiplier)": 1.0,
-                "Degrees of rotation": 0.0,
-                "Degrees of angle snapping": 10.0,
-                "Input Speed Cap": 0.0
-            }
-        ],
+        "profiles": [{
+            "name": "NeuroCurve",
+            "Whole/combined accel (set false for 'by component' mode)": true,
+            "lpNorm": 2.0,
+            "Stretches domain for horizontal vs vertical inputs": {"x": 1.0, "y": 1.0},
+            "Stretches accel range for horizontal vs vertical inputs": {"x": 1.0, "y": 1.0},
+            "Whole or horizontal accel parameters": {
+                "mode": "lut",
+                "Gain / Velocity": false,
+                "inputOffset": 0.0,
+                "outputOffset": 0.0,
+                "acceleration": 0.005,
+                "decayRate": 0.1,
+                "growthRate": 1.0,
+                "motivity": 1.5,
+                "exponentClassic": 2.0,
+                "scale": 1.0,
+                "exponentPower": 0.05,
+                "limit": 1.5,
+                "midpoint": 5.0,
+                "smooth": 0.5,
+                "Cap / Jump": {"x": 15.0, "y": 1.5},
+                "Cap mode": "output",
+                "data": formatted_points
+            },
+            "Vertical accel parameters": {
+                "mode": "noaccel",
+                "Gain / Velocity": true,
+                "data": []
+            },
+            "Sensitivity multiplier": 1.0,
+            "Y/X sensitivity ratio (vertical sens multiplier)": 1.0,
+            "L/R sensitivity ratio (left sens multiplier)": 1.0,
+            "U/D sensitivity ratio (up sens multiplier)": 1.0,
+            "Degrees of rotation": 0.0,
+            "Degrees of angle snapping": 10.0,
+            "Input Speed Cap": 0.0
+        }],
         "devices": []
     });
 
-    let raw_accel_settings = to_string_pretty(&raw_accel_json)
-        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
-
-    // Write the settings file
-    fs::write(&settings_path, raw_accel_settings)
+    // Write settings file
+    fs::write(&settings_path, to_string_pretty(&raw_accel_json)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?)
         .map_err(|e| format!("Failed to write settings file: {}", e))?;
 
-    // Run the writer.exe to apply the settings
-    let writer_path = Path::new(&raw_accel_dir).join("writer.exe");
-    println!("Looking for writer at: {}", writer_path.display());
-
-    // List files in the directory
-    println!("Files in directory:");
-    if let Ok(entries) = fs::read_dir(&raw_accel_dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                println!("  {}", entry.path().display());
-            }
-        }
-    }
-
-    if !writer_path.exists() {
-        return Err(format!("Writer executable not found at: {}", writer_path.display()));
-    }
-
+    // Run writer.exe
     Command::new(writer_path)
         .arg("settings.json")
-        .current_dir(raw_accel_dir)
+        .current_dir(rawAccelPath)
         .spawn()
         .map_err(|e| format!("Failed to execute Raw Accel writer: {}", e))?;
 
@@ -212,14 +159,13 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             #[cfg(target_os = "windows")]
             if let Some(window) = app.get_webview_window("main") {
                 window_vibrancy::apply_acrylic(&window, Some((10, 10, 10, 80)))?;
                 window.set_decorations(false)?;
-                let _ = window.set_theme(Some(tauri::Theme::Dark));
+                window.set_theme(Some(tauri::Theme::Dark))?;
                 window.set_shadow(true)?;
             }
             Ok(())
