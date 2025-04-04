@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, sync::OnceLock, fs, path::Path, process::Command};
 use tauri::Manager;
-use serde_json::{json, to_string_pretty};
+use serde_json::{json, to_string_pretty, from_str};
 
 const INPUT_RANGE: usize = 257;
 const DEFAULTS: [(&str, f64); 5] = [("min_sens", 0.6), ("max_sens", 3.0), ("range", 40.0), ("growth_base", 1.05), ("offset", 8.0)];
@@ -76,6 +76,30 @@ pub struct RawAccelSettings {
     pub y_x_ratio: f64,
     pub rotation: f64,
     pub angle_snapping: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AppSettings {
+    pub curve_settings: Settings,
+    pub raw_accel_settings: RawAccelSettings,
+    pub raw_accel_path: String,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        AppSettings {
+            curve_settings: Settings::default(),
+            raw_accel_settings: RawAccelSettings {
+                dpi: 1600.0,
+                polling_rate: 4000.0,
+                sens_multiplier: 1.0,
+                y_x_ratio: 1.0,
+                rotation: 0.0,
+                angle_snapping: 10.0,
+            },
+            raw_accel_path: String::new(),
+        }
+    }
 }
 
 #[tauri::command]
@@ -165,6 +189,47 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings
     Ok(())
 }
 
+#[tauri::command]
+fn save_app_settings(app_settings: AppSettings, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let app_dir = app_handle.path().app_config_dir()
+        .map_err(|e| format!("Failed to get app config directory: {}", e))?;
+
+    // Create the directory if it doesn't exist
+    fs::create_dir_all(&app_dir)
+        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+
+    let settings_path = app_dir.join("settings.json");
+
+    // Serialize and save the settings
+    let json = to_string_pretty(&app_settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+
+    fs::write(&settings_path, json)
+        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn load_app_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, String> {
+    let app_dir = app_handle.path().app_config_dir()
+        .map_err(|e| format!("Failed to get app config directory: {}", e))?;
+
+    let settings_path = app_dir.join("settings.json");
+
+    // If the file doesn't exist, return default settings
+    if !settings_path.exists() {
+        return Ok(AppSettings::default());
+    }
+
+    // Read and deserialize the settings
+    let json = fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Failed to read settings file: {}", e))?;
+
+    from_str(&json)
+        .map_err(|e| format!("Failed to parse settings file: {}", e))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -180,7 +245,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_default_settings, calculate_curve, apply_to_raw_accel])
+        .invoke_handler(tauri::generate_handler![get_default_settings, calculate_curve, apply_to_raw_accel, save_app_settings, load_app_settings])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

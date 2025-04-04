@@ -173,6 +173,63 @@ class SettingsManager {
         $('#select-path-btn').onclick = this.handleBrowseClick.bind(this);
     }
 
+    async loadSavedSettings() {
+        try {
+            // Load settings from persistent storage
+            const appSettings = await invoke('load_app_settings');
+
+            // Update curve settings
+            if (appSettings.curve_settings && appSettings.curve_settings.values) {
+                settings = appSettings.curve_settings;
+                Object.entries(settings.values).forEach(([key, value]) => {
+                    const input = $(`#${key}-value`);
+                    if (input) input.value = formatNumber(value);
+                });
+            }
+
+            // Update Raw Accel settings
+            if (appSettings.raw_accel_settings) {
+                this.rawAccelSettings = appSettings.raw_accel_settings;
+                Object.entries(this.rawAccelSettings).forEach(([key, value]) => {
+                    const input = $(`#${key}-value`);
+                    if (input) input.value = formatNumber(value);
+                });
+            }
+
+            // Update Raw Accel path
+            if (appSettings.raw_accel_path) {
+                this.rawAccelPath = appSettings.raw_accel_path;
+                const pathDisplay = $('#path-display');
+                pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
+                pathDisplay.classList.add('path-selected');
+            }
+
+            // Update the plot
+            updatePlotThrottled(true);
+
+            return true;
+        } catch (error) {
+            console.error('Failed to load saved settings:', error);
+            return false;
+        }
+    }
+
+    async saveSettings() {
+        try {
+            const appSettings = {
+                curve_settings: settings,
+                raw_accel_settings: this.rawAccelSettings,
+                raw_accel_path: this.rawAccelPath
+            };
+
+            await invoke('save_app_settings', { appSettings });
+            return true;
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            return false;
+        }
+    }
+
     initCurveSettings() {
         const template = $('#setting-row-template');
         const curveSettingsContainer = $('#curve-settings');
@@ -245,6 +302,7 @@ class SettingsManager {
         if (settings) {
             settings.values[key] = value;
             updatePlotThrottled(true);
+            this.saveSettings(); // Save settings when they change
         }
     }
 
@@ -254,6 +312,7 @@ class SettingsManager {
         value = Math.min(Math.max(value, info.min), info.max);
         input.value = formatNumber(value);
         this.rawAccelSettings[key] = value;
+        this.saveSettings(); // Save settings when they change
     }
 
     async handleBrowseClick() {
@@ -272,6 +331,9 @@ class SettingsManager {
                 const pathDisplay = $('#path-display');
                 pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
                 pathDisplay.classList.add('path-selected');
+
+                // Save the updated path
+                this.saveSettings();
             }
         } catch (error) {
             alert(`Failed to select directory: ${error}`);
@@ -330,6 +392,9 @@ const setupEventListeners = () => {
                 rawAccelSettings: rawAccelConfig.settings
             });
 
+            // Save settings after successful application
+            await settingsManager.saveSettings();
+
             alert('Curve applied to Raw Accel successfully!');
             button.disabled = false;
         } catch (error) {
@@ -372,7 +437,15 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     applyWebView2Optimizations();
     settingsManager = new SettingsManager();
-    await initializeSettings();
+
+    // Try to load saved settings first
+    const loadedSettings = await settingsManager.loadSavedSettings();
+
+    // If no saved settings, load defaults
+    if (!loadedSettings) {
+        await initializeSettings();
+    }
+
     setupEventListeners();
     updatePlotThrottled();
 });
