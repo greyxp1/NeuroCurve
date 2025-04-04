@@ -141,32 +141,59 @@ const cfg = {
             }
         }
     },
-    settings: {
-        min_sens: {label: 'Base Sensitivity', min: 0.1, max: 2, step: 0.05},
-        max_sens: {label: 'Maximum Sensitivity', min: 0.1, max: 5, step: 0.05},
-        offset: {label: 'Speed Threshold', min: 0, max: 50, step: 1},
+    curveSettings: {
+        min_sens: {label: 'Base Sens', min: 0.1, max: 2, step: 0.05},
+        max_sens: {label: 'Max Sens', min: 0.1, max: 5, step: 0.05},
+        offset: {label: 'Threshold', min: 0, max: 50, step: 1},
         range: {label: 'Acceleration Range', min: 10, max: 200, step: 1},
         growth_base: {label: 'Acceleration Rate', min: 1, max: 1.5, step: 0.001}
+    },
+    rawAccelSettings: {
+        dpi: {label: 'DPI', min: 0, max: 64000, default: 1600},
+        polling_rate: {label: 'Polling Rate', min: 0, max: 8000, step: 125, default: 4000},
+        sens_multiplier: {label: 'Sens Multiplier', min: 0.01, max: 10, default: 1.0},
+        y_x_ratio: {label: 'Y/X Ratio', min: 0.01, max: 10, default: 1.0},
+        rotation: {label: 'Rotation', min: -180, max: 180, default: 0.0},
+        angle_snapping: {label: 'Angle Snap', min: 0, max: 100, default: 10.0}
     }
 };
 
 class SettingsManager {
     constructor() {
+        this.rawAccelPath = '';
+        this.rawAccelSettings = {};
+
+        // Initialize curve settings
+        this.initCurveSettings();
+
+        // Initialize Raw Accel settings
+        this.initRawAccelSettings();
+
+        // Setup select path button
+        $('#select-path-btn').onclick = this.handleBrowseClick.bind(this);
+    }
+
+    initCurveSettings() {
         const template = $('#setting-row-template');
-        Object.entries(cfg.settings).forEach(([key, info]) => {
+        const curveSettingsContainer = $('#curve-settings');
+
+        if (!template || !curveSettingsContainer) return;
+
+        Object.entries(cfg.curveSettings).forEach(([key, info]) => {
             const row = template.content.cloneNode(true),
                   label = row.querySelector('.setting-label'),
                   input = row.querySelector('.setting-value');
 
             label.textContent = info.label;
+            label.setAttribute('for', `${key}-value`);
             input.id = `${key}-value`;
-            Object.assign(input, {min: info.min, max: info.max, step: info.step});
-            $('#all-settings').appendChild(row);
+            Object.assign(input, {min: info.min, max: info.max});
+            curveSettingsContainer.appendChild(row);
 
             input.onchange = e => {
                 const value = parseFloat(e.target.value);
                 e.target.value = formatNumber(value);
-                this.updateValue(key, value);
+                this.updateCurveValue(key, value);
             };
 
             input.oninput = e => {
@@ -176,9 +203,43 @@ class SettingsManager {
         });
     }
 
-    updateValue(key, value) {
+    initRawAccelSettings() {
+        const template = $('#setting-row-template');
+        const rawAccelSettingsContainer = $('#raw-accel-settings');
+
+        if (!template || !rawAccelSettingsContainer) return;
+
+        Object.entries(cfg.rawAccelSettings).forEach(([key, info]) => {
+            const row = template.content.cloneNode(true),
+                  label = row.querySelector('.setting-label'),
+                  input = row.querySelector('.setting-value');
+
+            label.textContent = info.label;
+            label.setAttribute('for', `${key}-value`);
+            input.id = `${key}-value`;
+            Object.assign(input, {min: info.min, max: info.max});
+            input.value = formatNumber(info.default);
+            rawAccelSettingsContainer.appendChild(row);
+
+            // Store default value in settings object
+            this.rawAccelSettings[key] = info.default;
+
+            input.onchange = e => {
+                const value = parseFloat(e.target.value);
+                e.target.value = formatNumber(value);
+                this.updateRawAccelValue(key, value);
+            };
+
+            input.oninput = e => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value)) this.rawAccelSettings[key] = value;
+            };
+        });
+    }
+
+    updateCurveValue(key, value) {
         const input = $(`#${key}-value`),
-              info = cfg.settings[key];
+              info = cfg.curveSettings[key];
         value = Math.min(Math.max(value, info.min), info.max);
         input.value = formatNumber(value);
         if (settings) {
@@ -186,12 +247,52 @@ class SettingsManager {
             updatePlotThrottled(true);
         }
     }
+
+    updateRawAccelValue(key, value) {
+        const input = $(`#${key}-value`),
+              info = cfg.rawAccelSettings[key];
+        value = Math.min(Math.max(value, info.min), info.max);
+        input.value = formatNumber(value);
+        this.rawAccelSettings[key] = value;
+    }
+
+    async handleBrowseClick() {
+        try {
+            const selected = await window.__TAURI__.dialog.open({
+                directory: true,
+                multiple: false,
+                title: 'Select Raw Accel Directory'
+            });
+
+            if (selected) {
+                const path = Array.isArray(selected) ? selected[0] : selected;
+                this.rawAccelPath = String(path);
+
+                // Update the path display
+                const pathDisplay = $('#path-display');
+                pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
+                pathDisplay.classList.add('path-selected');
+            }
+        } catch (error) {
+            alert(`Failed to select directory: ${error}`);
+        }
+    }
+
+    getRawAccelSettings() {
+        return {
+            path: this.rawAccelPath,
+            settings: this.rawAccelSettings
+        };
+    }
 }
+
+let settingsManager;
 
 const initializeSettings = async () => {
     settings = await invoke('get_default_settings');
     Object.entries(settings.values).forEach(([key, value]) => {
-        $(`#${key}-value`).value = formatNumber(value);
+        const input = $(`#${key}-value`);
+        if (input) input.value = formatNumber(value);
     });
 };
 
@@ -201,7 +302,8 @@ const setupEventListeners = () => {
         button.disabled = true;
         settings = await invoke('get_default_settings');
         Object.entries(settings.values).forEach(([key, value]) => {
-            $(`#${key}-value`).value = formatNumber(value);
+            const input = $(`#${key}-value`);
+            if (input) input.value = formatNumber(value);
         });
         updatePlotThrottled(true);
         button.disabled = false;
@@ -212,25 +314,23 @@ const setupEventListeners = () => {
             const button = $('#apply-btn');
             button.disabled = true;
 
-            // Show a dialog to select the Raw Accel directory
-            const selected = await window.__TAURI__.dialog.open({
-                directory: true,
-                multiple: false,
-                title: 'Select Raw Accel Directory'
-            });
+            // Get Raw Accel settings from the settings manager
+            const rawAccelConfig = settingsManager.getRawAccelSettings();
 
-            if (selected) {
-                // Apply the curve to Raw Accel
-                const path = Array.isArray(selected) ? selected[0] : selected;
-
-                await invoke('apply_to_raw_accel', {
-                    settings,
-                    rawAccelPath: String(path)
-                });
-
-                alert('Curve applied to Raw Accel successfully!');
+            if (!rawAccelConfig.path) {
+                alert('Please select a Raw Accel directory first');
+                button.disabled = false;
+                return;
             }
 
+            // Apply the curve to Raw Accel with all settings
+            await invoke('apply_to_raw_accel', {
+                settings,
+                rawAccelPath: rawAccelConfig.path,
+                rawAccelSettings: rawAccelConfig.settings
+            });
+
+            alert('Curve applied to Raw Accel successfully!');
             button.disabled = false;
         } catch (error) {
             alert(`Failed to apply curve: ${error}`);
@@ -266,10 +366,12 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     applyWebView2Optimizations();
-    new SettingsManager();
+    settingsManager = new SettingsManager();
     await initializeSettings();
     setupEventListeners();
     updatePlotThrottled();

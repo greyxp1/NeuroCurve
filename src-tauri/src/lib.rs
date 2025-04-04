@@ -68,9 +68,19 @@ fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
     (0..limit).map(|i| (i as f64, curve[i])).collect()
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RawAccelSettings {
+    pub dpi: f64,
+    pub polling_rate: f64,
+    pub sens_multiplier: f64,
+    pub y_x_ratio: f64,
+    pub rotation: f64,
+    pub angle_snapping: f64,
+}
+
 #[tauri::command]
 #[allow(non_snake_case)]
-fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), String> {
+fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings: RawAccelSettings) -> Result<(), String> {
     if rawAccelPath.is_empty() {
         return Err("Raw Accel path is empty".to_string());
     }
@@ -96,8 +106,8 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), St
         "version": "1.6.1",
         "defaultDeviceConfig": {
             "disable": false,
-            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 0,
-            "Polling rate Hz (keep at 0 for automatic adjustment)": 0
+            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": rawAccelSettings.dpi as i64,
+            "Polling rate Hz (keep at 0 for automatic adjustment)": rawAccelSettings.polling_rate as i64
         },
         "profiles": [{
             "name": "NeuroCurve",
@@ -129,12 +139,12 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String) -> Result<(), St
                 "Gain / Velocity": true,
                 "data": []
             },
-            "Sensitivity multiplier": 1.0,
-            "Y/X sensitivity ratio (vertical sens multiplier)": 1.0,
+            "Sensitivity multiplier": rawAccelSettings.sens_multiplier,
+            "Y/X sensitivity ratio (vertical sens multiplier)": rawAccelSettings.y_x_ratio,
             "L/R sensitivity ratio (left sens multiplier)": 1.0,
             "U/D sensitivity ratio (up sens multiplier)": 1.0,
-            "Degrees of rotation": 0.0,
-            "Degrees of angle snapping": 10.0,
+            "Degrees of rotation": rawAccelSettings.rotation,
+            "Degrees of angle snapping": rawAccelSettings.angle_snapping,
             "Input Speed Cap": 0.0
         }],
         "devices": []

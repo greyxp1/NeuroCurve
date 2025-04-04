@@ -14,18 +14,28 @@
         <div class="settings-panel hardware-accelerated">
           <div class="panel-header"><h2>Settings</h2></div>
           <div class="settings-container">
-            <div id="all-settings">
-              <template id="setting-row-template">
-                <div class="setting-row">
-                  <div class="setting-label"></div>
-                  <div class="setting-controls">
-                    <div class="value-control">
-                      <input type="number" class="setting-value">
-                    </div>
-                  </div>
-                </div>
-              </template>
+            <div class="settings-section">
+              <h3>Curve</h3>
+              <div id="curve-settings"></div>
             </div>
+            <div class="settings-section">
+              <h3>Raw Accel</h3>
+              <div id="raw-accel-settings">
+                <div class="setting-row path-row">
+                  <label class="setting-label">Raw Accel Path</label>
+                  <button id="select-path-btn">Select</button>
+                </div>
+                <div class="path-display" id="path-display">
+                  <span>No directory selected</span>
+                </div>
+              </div>
+            </div>
+            <template id="setting-row-template">
+              <div class="setting-row">
+                <label class="setting-label"></label>
+                <input type="number" class="setting-value">
+              </div>
+            </template>
           </div>
           <div class="action-buttons">
             <button id="reset-btn">Reset</button>

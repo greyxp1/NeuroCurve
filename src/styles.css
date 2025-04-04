@@ -29,8 +29,8 @@
   --text-color-dim: rgba(255,255,255,.7);
   --border-glow: rgba(77,159,255,.2);
   --anim: .15s ease;
-  --panel-w: 180px;
-  --input-h: 28px;
+  --panel-w: 250px;
+  --input-h: 24px;
   --grad-primary: linear-gradient(45deg,var(--primary) 0%,#6eb4ff 50%,var(--primary) 100%);
   --grad-error: linear-gradient(45deg,var(--error) 0%,#ff6b6b 50%,var(--error) 100%);
 }
@@ -82,7 +82,7 @@ body {
 .plot-panel,.settings-panel {
   background: var(--panel-bg);
   border-radius: var(--corner-radius);
-  padding: 12px;
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -94,6 +94,7 @@ body {
   border: 1px solid var(--panel-border);
   will-change: transform;
   transform: translate3d(0,0,0);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .plot-panel {
@@ -103,8 +104,8 @@ body {
 }
 
 .settings-panel {
-  width: 180px;
-  min-width: 180px;
+  width: var(--panel-w);
+  min-width: var(--panel-w);
   transition: transform var(--anim-fast);
   transform-origin: left;
   display: flex;
@@ -114,9 +115,9 @@ body {
 .panel-header {
   width: 100%;
   text-align: center;
-  margin-bottom: 16px;
-  padding: 8px 0;
-  height: 40px;
+  margin-bottom: 12px;
+  padding: 6px 0;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,9 +137,27 @@ body {
 .settings-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   width: 100%;
+  padding: 0 4px;
+  margin: 0;
+  scrollbar-width: thin;
+  max-height: calc(100vh - 120px);
+}
+
+.settings-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settings-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 .action-buttons {
@@ -146,9 +165,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 24px 0 0;
+  padding: 16px 0 0;
   position: relative;
 }
 
@@ -236,7 +255,7 @@ body {
 }
 
 .panel-header h2 {
-    font: 600 25px sans-serif;
+    font: 600 22px sans-serif;
     margin: 0;
     background: linear-gradient(120deg,#fff 0%,var(--primary) 50%,#fff 100%);
     background-size: 200% auto;
@@ -332,53 +351,130 @@ body {
 }
 
 /* Settings styles */
+.settings-section {
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.settings-section h3 {
+  font: 600 12px sans-serif;
+  color: var(--text-color);
+  margin: 0 0 6px 0;
+  padding: 4px 0;
+  border-radius: 4px;
+  text-align: center;
+  background: rgba(77, 159, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-section h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
 .setting-row {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 65px;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 6px;
   position: relative;
   width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
 }
 
 .setting-label {
-  font: 500 13px sans-serif;
+  font: 500 12px sans-serif;
   color: var(--text-color);
   letter-spacing: .2px;
-  text-align: center;
-  margin-bottom: 4px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.setting-controls {
-  position: relative;
-  width: 140px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* Setting controls removed in favor of grid layout */
 
-.value-control {
+#select-path-btn {
+  height: 24px;
+  background: var(--grad-primary);
+  border: 0;
+  border-radius: var(--corner-radius);
+  color: var(--text-secondary);
+  font: 600 11px sans-serif;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  justify-self: end;
+}
+
+#select-path-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 16px -4px rgba(77,159,255,.2);
+}
+
+.path-row {
+  margin-bottom: 3px;
+}
+
+.path-display {
+  background: var(--element-bg);
+  border-radius: var(--corner-radius);
+  padding: 6px 8px;
+  margin: 0 0 8px 0;
+  font-size: 10px;
+  color: var(--text-color-dim);
+  word-break: break-all;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all .2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  grid-column: 1 / span 2;
+  line-height: 1.2;
+}
+
+.path-selected {
+  background: rgba(77,159,255,0.1);
+  color: var(--text-color);
+  border-color: rgba(77,159,255,0.3);
+  box-shadow: 0 0 0 1px rgba(77, 159, 255, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .setting-value {
   width: 100%;
-  padding: 8px;
-  font: 500 13px 'JetBrains Mono',monospace;
-  text-align: center;
+  height: 24px;
   background: var(--element-bg);
-  border: 0;
-  border-radius: 4px;
+  border: 1px solid transparent;
+  border-radius: var(--corner-radius);
   color: var(--text-color);
+  font: 400 11px sans-serif;
+  padding: 0 6px;
+  text-align: right;
   transition: all .2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  justify-self: end;
 }
 
-.setting-value:focus {background:var(--element-bg-hover);color:#fff;outline:0}
+.setting-value:focus {
+  background: var(--element-bg-hover);
+  color: #fff;
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px rgba(77, 159, 255, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
 .setting-value::-webkit-outer-spin-button,
 .setting-value::-webkit-inner-spin-button {appearance:none}
 
@@ -394,11 +490,11 @@ body {
 }
 
 #reset-btn,#apply-btn {
-  width: 75px;
-  height: 36px;
+  width: 70px;
+  height: 32px;
   border: 0;
   border-radius: var(--corner-radius);
-  font: 600 14px sans-serif;
+  font: 600 13px sans-serif;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all .2s ease;
