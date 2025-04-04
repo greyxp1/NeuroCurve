@@ -1,6 +1,6 @@
 const {invoke} = window.__TAURI__.core, {getCurrentWindow} = window.__TAURI__.window, appWindow = getCurrentWindow(), $ = s => document.querySelector(s), Chart = window.Chart;
-const throttle = (f, l) => {let i; return function() {if (!i) {f.apply(this, arguments); i = true; setTimeout(() => i = false, l);}}},
-      formatNumber = n => Number.isInteger(n) ? n.toString() : n.toString().replace(/\.?0+$/, '');
+const throttle = (f, l) => {let i; return function() {if (!i) {f.apply(this, arguments); i = true; setTimeout(() => i = false, l);}}};
+const formatNumber = n => Number.isInteger(n) ? n.toString() : n.toString().replace(/\.?0+$/, '');
 let chart = null, settings = null;
 
 const applyWebView2Optimizations = () => navigator.userAgent.includes('Edg') && window.chrome && (document.body.classList.add('webview2'),
@@ -109,7 +109,6 @@ const createChart = (points, maxValue) => {
         plugins: [chartAreaBorder]
     });
 
-    // Start animation loop
     const animate = () => {
         if (!document.hidden) chart.update('none');
         chart.animationFrame = requestAnimationFrame(animate);
@@ -117,7 +116,6 @@ const createChart = (points, maxValue) => {
     chart.animationFrame = requestAnimationFrame(animate);
 };
 
-// Chart configuration
 const chartConfig = {
     options: {
         responsive: true, maintainAspectRatio: false,
@@ -142,14 +140,12 @@ const chartConfig = {
     }
 };
 
-// Settings configuration - will be populated from backend
 let cfg = {
     chart: chartConfig,
     curveSettings: {},
     rawAccelSettings: {}
 };
 
-// Load all default settings from the backend
 const loadDefaultConfigurations = async () => {
     try {
         const defaultSettings = await invoke('get_all_default_settings');
@@ -166,24 +162,16 @@ class SettingsManager {
     constructor() {
         this.rawAccelPath = '';
         this.rawAccelSettings = {};
-
-        // Initialize curve settings
         this.initCurveSettings();
-
-        // Initialize Raw Accel settings
         this.initRawAccelSettings();
-
-        // Setup select path button
         $('#select-path-btn').onclick = this.handleBrowseClick.bind(this);
     }
 
     async loadSavedSettings() {
         try {
-            // Load settings from persistent storage
             const appSettings = await invoke('load_app_settings');
 
-            // Update curve settings
-            if (appSettings.curve_settings && appSettings.curve_settings.values) {
+            if (appSettings.curve_settings?.values) {
                 settings = appSettings.curve_settings;
                 Object.entries(settings.values).forEach(([key, value]) => {
                     const input = $(`#${key}-value`);
@@ -191,7 +179,6 @@ class SettingsManager {
                 });
             }
 
-            // Update Raw Accel settings
             if (appSettings.raw_accel_settings) {
                 this.rawAccelSettings = appSettings.raw_accel_settings;
                 Object.entries(this.rawAccelSettings).forEach(([key, value]) => {
@@ -200,7 +187,6 @@ class SettingsManager {
                 });
             }
 
-            // Update Raw Accel path
             if (appSettings.raw_accel_path) {
                 this.rawAccelPath = appSettings.raw_accel_path;
                 const pathDisplay = $('#path-display');
@@ -208,9 +194,7 @@ class SettingsManager {
                 pathDisplay.classList.add('path-selected');
             }
 
-            // Update the plot
             updatePlotThrottled(true);
-
             return true;
         } catch (error) {
             console.error('Failed to load saved settings:', error);
@@ -235,11 +219,8 @@ class SettingsManager {
     }
 
     resetRawAccelSettings() {
-        // Reset all Raw Accel settings to their default values
-        // Define the order of Raw Accel settings
         const rawAccelSettingOrder = ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'];
 
-        // Reset settings in the specified order
         rawAccelSettingOrder.forEach(key => {
             const info = cfg.rawAccelSettings[key];
             if (!info) return;
@@ -255,14 +236,9 @@ class SettingsManager {
     initCurveSettings() {
         const template = $('#setting-row-template');
         const curveSettingsContainer = $('#curve-settings');
-
         if (!template || !curveSettingsContainer) return;
 
-        // Define the order of curve settings
-        const curveSettingOrder = ['min_sens', 'max_sens', 'offset', 'range', 'growth_base'];
-
-        // Create settings in the specified order
-        curveSettingOrder.forEach(key => {
+        ['min_sens', 'max_sens', 'offset', 'range', 'growth_base'].forEach(key => {
             const info = cfg.curveSettings[key];
             if (!info) return;
 
@@ -292,14 +268,9 @@ class SettingsManager {
     initRawAccelSettings() {
         const template = $('#setting-row-template');
         const rawAccelSettingsContainer = $('#raw-accel-settings');
-
         if (!template || !rawAccelSettingsContainer) return;
 
-        // Define the order of Raw Accel settings
-        const rawAccelSettingOrder = ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'];
-
-        // Create settings in the specified order
-        rawAccelSettingOrder.forEach(key => {
+        ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'].forEach(key => {
             const info = cfg.rawAccelSettings[key];
             if (!info) return;
 
@@ -314,7 +285,6 @@ class SettingsManager {
             input.value = formatNumber(info.default);
             rawAccelSettingsContainer.appendChild(row);
 
-            // Store default value in settings object
             this.rawAccelSettings[key] = info.default;
 
             input.onchange = e => {
@@ -338,7 +308,7 @@ class SettingsManager {
         if (settings) {
             settings.values[key] = value;
             updatePlotThrottled(true);
-            this.saveSettings(); // Save settings when they change
+            this.saveSettings();
         }
     }
 
@@ -348,7 +318,7 @@ class SettingsManager {
         value = Math.min(Math.max(value, info.min), info.max);
         input.value = formatNumber(value);
         this.rawAccelSettings[key] = value;
-        this.saveSettings(); // Save settings when they change
+        this.saveSettings();
     }
 
     async handleBrowseClick() {
@@ -362,13 +332,9 @@ class SettingsManager {
             if (selected) {
                 const path = Array.isArray(selected) ? selected[0] : selected;
                 this.rawAccelPath = String(path);
-
-                // Update the path display
                 const pathDisplay = $('#path-display');
                 pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
                 pathDisplay.classList.add('path-selected');
-
-                // Save the updated path
                 this.saveSettings();
             }
         } catch (error) {
@@ -377,10 +343,7 @@ class SettingsManager {
     }
 
     getRawAccelSettings() {
-        return {
-            path: this.rawAccelPath,
-            settings: this.rawAccelSettings
-        };
+        return { path: this.rawAccelPath, settings: this.rawAccelSettings };
     }
 }
 
@@ -395,14 +358,10 @@ const initializeSettings = async () => {
 };
 
 const setupEventListeners = () => {
-    // Tab switching
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active class from all tabs and buttons
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            // Add active class to clicked button and corresponding content
             const tabName = button.getAttribute('data-tab');
             button.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
@@ -412,20 +371,13 @@ const setupEventListeners = () => {
     $('#reset-btn').onclick = async () => {
         const button = $('#reset-btn');
         button.disabled = true;
-
-        // Reset curve settings
         settings = await invoke('get_default_settings');
         Object.entries(settings.values).forEach(([key, value]) => {
             const input = $(`#${key}-value`);
             if (input) input.value = formatNumber(value);
         });
-
-        // Reset Raw Accel settings to defaults
         settingsManager.resetRawAccelSettings();
-
-        // Save the reset settings
         await settingsManager.saveSettings();
-
         updatePlotThrottled(true);
         button.disabled = false;
     };
@@ -434,26 +386,18 @@ const setupEventListeners = () => {
         try {
             const button = $('#apply-btn');
             button.disabled = true;
-
-            // Get Raw Accel settings from the settings manager
             const rawAccelConfig = settingsManager.getRawAccelSettings();
-
             if (!rawAccelConfig.path) {
                 alert('Please select a Raw Accel directory first');
                 button.disabled = false;
                 return;
             }
-
-            // Apply the curve to Raw Accel with all settings
             await invoke('apply_to_raw_accel', {
                 settings,
                 rawAccelPath: rawAccelConfig.path,
                 rawAccelSettings: rawAccelConfig.settings
             });
-
-            // Save settings after successful application
             await settingsManager.saveSettings();
-
             alert('Curve applied to Raw Accel successfully!');
             button.disabled = false;
         } catch (error) {
@@ -462,7 +406,6 @@ const setupEventListeners = () => {
         }
     };
 
-    // Window controls
     $('#titlebar-minimize').onclick = () => appWindow.minimize();
     $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();
     $('#titlebar-close').onclick = () => appWindow.close();
@@ -476,7 +419,6 @@ const cleanupChart = () => {
     if (chart) { chart.destroy(); chart = null; }
 };
 
-// Handle visibility changes for animation performance
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && chart?.animationFrame) {
         cancelAnimationFrame(chart.animationFrame);
@@ -489,27 +431,14 @@ document.addEventListener('visibilitychange', () => {
         chart.animationFrame = requestAnimationFrame(animate);
     }
 });
-
-
-
-// Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     applyWebView2Optimizations();
-
-    // Load default configurations from backend
     await loadDefaultConfigurations();
-
     settingsManager = new SettingsManager();
 
-    // Try to load saved settings first
     const loadedSettings = await settingsManager.loadSavedSettings();
+    if (!loadedSettings) await initializeSettings();
 
-    // If no saved settings, load defaults
-    if (!loadedSettings) {
-        await initializeSettings();
-    }
-
-    // Ensure the Raw Accel tab is active by default
     document.querySelector('.tab-button[data-tab="raw-accel"]').classList.add('active');
     document.getElementById('raw-accel-tab').classList.add('active');
     document.querySelector('.tab-button[data-tab="curve"]').classList.remove('active');
@@ -519,8 +448,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     updatePlotThrottled();
 });
 
-// Prevent context menu
 document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Cleanup on unload
 window.addEventListener('beforeunload', cleanupChart);
