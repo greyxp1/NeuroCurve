@@ -49,8 +49,8 @@ impl Default for DefaultSettings {
 
         let settings = [
             ("curve", "min_sens", "Base Sens", 0.1, 2.0, 0.05, DEFAULT_MIN_SENS),
-            ("curve", "max_sens", "Max Sens", 0.1, 5.0, 0.05, DEFAULT_MAX_SENS),
-            ("curve", "offset", "Threshold", 0.0, 50.0, 1.0, DEFAULT_OFFSET),
+            ("curve", "max_sens", "Max Sens", 0.1, 10.0, 0.05, DEFAULT_MAX_SENS),
+            ("curve", "offset", "Offset", 0.0, 50.0, 1.0, DEFAULT_OFFSET),
             ("curve", "range", "Acceleration Range", 10.0, 200.0, 1.0, DEFAULT_RANGE),
             ("curve", "growth_base", "Acceleration Rate", 1.0, 1.5, 0.001, DEFAULT_GROWTH_BASE),
             ("raw", "dpi", "DPI", 0.0, 64000.0, 1.0, DEFAULT_DPI),

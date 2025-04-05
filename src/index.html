@@ -22,13 +22,7 @@
             <div class="tab-content active" id="raw-accel-tab">
               <div class="settings-section">
                 <div id="raw-accel-settings">
-                  <div class="setting-row path-row">
-                    <label class="setting-label">Raw Accel Path</label>
-                    <button id="select-path-btn">Select</button>
-                    <div class="path-display" id="path-display">
-                      <span>No directory selected</span>
-                    </div>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -40,7 +34,7 @@
             <template id="setting-row-template">
               <div class="setting-row">
                 <label class="setting-label"></label>
-                <input type="number" class="setting-value">
+                <input type="text" inputmode="decimal" class="setting-value" novalidate>
               </div>
             </template>
           </div>
@@ -57,7 +51,7 @@
           </div>
           <div class="panel-header"><h2>Sensitivity Curve</h2></div>
           <div id="sensitivity-plot-container">
-            <canvas id="sensitivity-plot"></canvas>
+            <canvas id="sensitivity-plot" style="background: transparent; border: none;"></canvas>
           </div>
         </div>
       </div>
