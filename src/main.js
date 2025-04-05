@@ -190,7 +190,7 @@ class SettingsManager {
             if (appSettings.raw_accel_path) {
                 this.rawAccelPath = appSettings.raw_accel_path;
                 const pathDisplay = $('#path-display');
-                pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
+                pathDisplay.innerHTML = `<span>${this.rawAccelPath}</span>`;
                 pathDisplay.classList.add('path-selected');
             }
 
@@ -333,7 +333,7 @@ class SettingsManager {
                 const path = Array.isArray(selected) ? selected[0] : selected;
                 this.rawAccelPath = String(path);
                 const pathDisplay = $('#path-display');
-                pathDisplay.innerHTML = `<span title="${this.rawAccelPath}">${this.rawAccelPath}</span>`;
+                pathDisplay.innerHTML = `<span>${this.rawAccelPath}</span>`;
                 pathDisplay.classList.add('path-selected');
                 this.saveSettings();
             }
@@ -358,13 +358,36 @@ const initializeSettings = async () => {
 };
 
 const setupEventListeners = () => {
-    document.querySelectorAll('.tab-button').forEach(button => {
+    const tabIndicator = document.querySelector('.tab-indicator');
+    const tabButtons = document.querySelectorAll('.tab-button');
+
+    // Initialize tab indicator position and width
+    const updateTabIndicator = (activeTab) => {
+        if (!tabIndicator) return;
+        const tabWidth = activeTab.offsetWidth;
+        const tabLeft = activeTab.offsetLeft;
+        // Adjust width to be slightly smaller than the tab to prevent overflow
+        tabIndicator.style.width = `${tabWidth - 4}px`;
+        tabIndicator.style.transform = `translateX(${tabLeft + 2}px)`;
+    };
+
+    // Set initial position
+    const activeTab = document.querySelector('.tab-button.active');
+    if (activeTab && tabIndicator) {
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => updateTabIndicator(activeTab), 0);
+    }
+
+    tabButtons.forEach(button => {
         button.addEventListener('click', () => {
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             const tabName = button.getAttribute('data-tab');
             button.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Animate the tab indicator
+            updateTabIndicator(button);
         });
     });
 
@@ -446,6 +469,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupEventListeners();
     updatePlotThrottled();
+
+    // Ensure tab indicator is positioned correctly after everything is loaded
+    window.addEventListener('load', () => {
+        const tabIndicator = document.querySelector('.tab-indicator');
+        const activeTab = document.querySelector('.tab-button.active');
+        if (tabIndicator && activeTab) {
+            const tabWidth = activeTab.offsetWidth;
+            const tabLeft = activeTab.offsetLeft;
+            // Adjust width to be slightly smaller than the tab to prevent overflow
+            tabIndicator.style.width = `${tabWidth - 4}px`;
+            tabIndicator.style.transform = `translateX(${tabLeft + 2}px)`;
+        }
+    });
+
+    // Update tab indicator on window resize
+    window.addEventListener('resize', () => {
+        const tabIndicator = document.querySelector('.tab-indicator');
+        const activeTab = document.querySelector('.tab-button.active');
+        if (tabIndicator && activeTab) {
+            const tabWidth = activeTab.offsetWidth;
+            const tabLeft = activeTab.offsetLeft;
+            // Adjust width to be slightly smaller than the tab to prevent overflow
+            tabIndicator.style.width = `${tabWidth - 4}px`;
+            tabIndicator.style.transform = `translateX(${tabLeft + 2}px)`;
+        }
+    });
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
