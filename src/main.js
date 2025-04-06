@@ -6,7 +6,7 @@ let chart = null, settings = null;
 const applyWebView2Optimizations = () => navigator.userAgent.includes('Edg') && window.chrome && (document.body.classList.add('webview2'),
     cfg.chart.options.animation.duration = 600, cfg.chart.options.animation.easing = 'linear',
     cfg.chart.options.scales.x.grid.color = cfg.chart.options.scales.y.grid.color = 'rgba(255,255,255,0.02)',
-    document.head.appendChild(Object.assign(document.createElement('style'), {textContent: `.webview2 .plot-panel,.webview2 .settings-panel{background:rgba(12,12,12,0.85)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.webview2 .panel-header h2{background:linear-gradient(120deg,var(--text-primary) 0%,var(--primary) 50%,var(--text-primary) 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:grad 32s linear infinite}.webview2 .panel-header h2::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:glow 16s ease infinite}.webview2 #sensitivity-plot{image-rendering:auto}`})),
+    document.head.appendChild(Object.assign(document.createElement('style'), {textContent: `.webview2 .plot-panel,.webview2 .settings-panel{background:rgba(18,18,18,0.85)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.webview2 .panel-header h2,.webview2 .app-name{background:linear-gradient(120deg,var(--text-primary) 0%,var(--primary) 50%,var(--text-primary) 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:grad 32s linear infinite}.webview2 .panel-header h2::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:glow 16s ease infinite}.webview2 #sensitivity-plot{image-rendering:auto}`})),
     $('#sensitivity-plot')?.getContext('2d', {alpha: true, desynchronized: true, powerPreference: 'high-performance'}));
 const updatePlot = async (animate = true) => {
     if (!settings || !$('#sensitivity-plot')) return;
@@ -554,6 +554,7 @@ document.head.appendChild(Object.assign(document.createElement('style'), {
 }));
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize app while splash screen is showing
     applyWebView2Optimizations();
     await loadDefaultConfigurations();
     settingsManager = new SettingsManager();
@@ -567,6 +568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('.tab-button[data-tab="curve"]').classList.remove('active');
     $('#curve-tab').classList.remove('active');
 
+    // Remove tooltips from specific inputs
     ['min_sens-value', 'max_sens-value', 'sens_multiplier-value', 'y_x_ratio-value', 'growth_base-value']
         .forEach(id => {
             const input = document.getElementById(id);
@@ -583,6 +585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     updatePlotThrottled();
 
+    // Handle tab indicator positioning
     const updateTabOnResize = () => {
         const activeTab = $('.tab-button.active');
         if (activeTab) {
@@ -596,6 +599,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.addEventListener('load', updateTabOnResize);
     window.addEventListener('resize', updateTabOnResize);
+
+    // Handle splash screen animation
+    const splashScreen = $('#splash-screen');
+    if (splashScreen) {
+        // Ensure splash screen is removed from DOM after animation completes
+        splashScreen.addEventListener('animationend', (e) => {
+            if (e.animationName === 'splashFadeOut') {
+                splashScreen.remove();
+            }
+        });
+    }
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());

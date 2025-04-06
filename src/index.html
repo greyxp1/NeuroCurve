@@ -9,6 +9,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
+    <div id="splash-screen">
+      <div class="splash-content">
+        <div class="splash-animation-container">
+          <div class="splash-logo-title-group">
+            <img src="icon.ico" alt="NeuroCurve Logo" class="splash-logo">
+            <div class="splash-title">
+              <span class="letter">N</span>
+              <span class="letter">e</span>
+              <span class="letter">u</span>
+              <span class="letter">r</span>
+              <span class="letter">o</span>
+              <span class="letter">C</span>
+              <span class="letter">u</span>
+              <span class="letter">r</span>
+              <span class="letter">v</span>
+              <span class="letter">e</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="container" data-tauri-drag-region>
       <div class="main-content hardware-accelerated">
         <div class="settings-panel hardware-accelerated">
@@ -49,9 +70,14 @@
             <button class="titlebar-button" id="titlebar-maximize"></button>
             <button class="titlebar-button" id="titlebar-close"></button>
           </div>
-          <div class="panel-header"><h2>Sensitivity Curve</h2></div>
+          <div class="panel-header">
+            <div class="header-content">
+              <h2>Sensitivity Curve</h2>
+            </div>
+          </div>
           <div id="sensitivity-plot-container">
             <canvas id="sensitivity-plot" style="background: transparent; border: none;"></canvas>
+            <div class="watermark">Created by Greyxp1</div>
           </div>
         </div>
       </div>
