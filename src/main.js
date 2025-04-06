@@ -1,4 +1,4 @@
-const {invoke} = window.__TAURI__.core, {getCurrentWindow} = window.__TAURI__.window, 
+const {invoke} = window.__TAURI__.core, {getCurrentWindow} = window.__TAURI__.window,
       appWindow = getCurrentWindow(), $ = s => document.querySelector(s), Chart = window.Chart;
 const throttle = (f, l) => {let i; return function() {if (!i) {f.apply(this, arguments); i = setTimeout(() => i = false, l)}}};
 const formatNumber = n => Number.isInteger(n) ? n.toString() : n.toString().replace(/\.?0+$/, '');
@@ -11,7 +11,7 @@ const chartAreaBorder = {
     const {ctx, chartArea: {left, top, width, height}} = chart;
     ctx.save();
     ctx.lineWidth = 3;
-    
+
     // Create rounded rectangle path
     const radius = 8, path = new Path2D();
     path.moveTo(left + radius, top);
@@ -56,7 +56,7 @@ const updatePlot = async (animate = true) => {
   const points = await invoke('calculate_curve', {settings}),
         maxY = Math.max(...points.map(p => p[1])) + 0.5,
         maxX = Math.max(...points.map(p => p[0]));
-  
+
   if (chart) {
     chart.data.datasets[0].data = chart.data.datasets[1].data = points.map(p => p[1]);
     chart.data.labels = points.map(p => parseFloat(p[0]));
@@ -170,7 +170,7 @@ class SettingsManager {
   async loadSavedSettings() {
     try {
       const appSettings = await invoke('load_app_settings');
-      
+
       if (appSettings.curve_settings?.values) {
         settings = appSettings.curve_settings;
         Object.entries(settings.values).forEach(([key, value]) => {
@@ -178,7 +178,7 @@ class SettingsManager {
           if (input) input.value = formatNumber(value);
         });
       }
-      
+
       if (appSettings.raw_accel_settings) {
         this.rawAccelSettings = appSettings.raw_accel_settings;
         Object.entries(this.rawAccelSettings).forEach(([key, value]) => {
@@ -186,11 +186,11 @@ class SettingsManager {
           if (input) input.value = formatNumber(value);
         });
       }
-      
+
       if (appSettings.raw_accel_path) {
         this.rawAccelPath = appSettings.raw_accel_path;
       }
-      
+
       updatePlotThrottled(true);
       return true;
     } catch (error) {
@@ -219,10 +219,10 @@ class SettingsManager {
     ['dpi', 'polling_rate', 'sens_multiplier', 'y_x_ratio', 'rotation', 'angle_snapping'].forEach(key => {
       const info = cfg.rawAccelSettings[key];
       if (!info) return;
-      
+
       const defaultValue = info.default;
       this.rawAccelSettings[key] = defaultValue;
-      
+
       const input = $(`#${key}-value`);
       if (input) input.value = formatNumber(defaultValue);
     });
@@ -232,25 +232,25 @@ class SettingsManager {
     const template = $('#setting-row-template');
     const settingsContainer = $(container);
     if (!template || !settingsContainer) return;
-    
+
     const settings = type === 'curve' ? cfg.curveSettings : cfg.rawAccelSettings;
     const noValidateKeys = {
       'curve': ['min_sens', 'max_sens'],
       'raw': ['sens_multiplier', 'y_x_ratio', 'growth_base']
     }[type];
-    
+
     keys.forEach(key => {
       const info = settings[key];
       if (!info) return;
-      
+
       const row = template.content.cloneNode(true),
             label = row.querySelector('.setting-label'),
             input = row.querySelector('.setting-value');
-      
+
       label.textContent = info.label;
       label.setAttribute('for', `${key}-value`);
       input.id = `${key}-value`;
-      
+
       if (noValidateKeys.includes(key)) {
         input.setAttribute('novalidate', '');
         input.setAttribute('data-min', info.min);
@@ -258,14 +258,14 @@ class SettingsManager {
       } else {
         Object.assign(input, {min: info.min, max: info.max});
       }
-      
+
       if (type === 'raw') {
         input.value = formatNumber(info.default);
         this.rawAccelSettings[key] = info.default;
       }
-      
+
       settingsContainer.appendChild(row);
-      
+
       input.onchange = e => {
         const value = parseFloat(e.target.value);
         if (!isNaN(value)) {
@@ -273,14 +273,14 @@ class SettingsManager {
           type === 'curve' ? this.updateCurveValue(key, value) : this.updateRawAccelValue(key, value);
         }
       };
-      
+
       input.oninput = e => {
         const value = parseFloat(e.target.value);
         if (!isNaN(value)) {
           type === 'curve' ? settings.values[key] = value : this.rawAccelSettings[key] = value;
         }
       };
-      
+
       input.addEventListener('invalid', e => e.preventDefault());
     });
   }
@@ -296,20 +296,20 @@ class SettingsManager {
   updateValue(type, key, value) {
     const input = $(`#${key}-value`);
     const info = type === 'curve' ? cfg.curveSettings[key] : cfg.rawAccelSettings[key];
-    
+
     const min = input.hasAttribute('data-min') ? parseFloat(input.getAttribute('data-min')) : info.min;
     const max = input.hasAttribute('data-max') ? parseFloat(input.getAttribute('data-max')) : info.max;
-    
+
     value = Math.min(Math.max(value, min), max);
     input.value = formatNumber(value);
-    
+
     if (type === 'curve' && settings) {
       settings.values[key] = value;
       updatePlotThrottled(true);
     } else {
       this.rawAccelSettings[key] = value;
     }
-    
+
     this.saveSettings();
   }
 
@@ -321,7 +321,7 @@ class SettingsManager {
       const selected = await window.__TAURI__.dialog.open({
         directory: true, multiple: false, title: 'Select Raw Accel Directory'
       });
-      
+
       if (selected) {
         this.rawAccelPath = String(Array.isArray(selected) ? selected[0] : selected);
         this.saveSettings();
@@ -329,7 +329,7 @@ class SettingsManager {
       }
       return false;
     } catch (error) {
-      alert(`Failed to select directory: ${error}`);
+      showErrorNotification(`Failed to select directory: ${error}`);
       throw error;
     }
   }
@@ -367,31 +367,31 @@ const setupEventListeners = () => {
   const updateTabIndicator = activeTab => {
     const tabIndicator = $('.tab-indicator');
     if (!tabIndicator || !activeTab) return;
-    
+
     tabIndicator.style.width = `${activeTab.offsetWidth - 10}px`;
     tabIndicator.style.transform = `translate(${activeTab.offsetLeft + 5}px, -50%)`;
   };
-  
+
   setTimeout(() => updateTabIndicator($('.tab-button.active')), 0);
-  
+
   document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
+
       const tabName = button.getAttribute('data-tab');
       button.classList.add('active');
       document.getElementById(`${tabName}-tab`).classList.add('active');
       updateTabIndicator(button);
     });
   });
-  
+
   // Reset button
   $('#reset-btn').onclick = async () => {
     const button = $('#reset-btn');
     button.disabled = true;
     button.textContent = 'Resetting...';
-    
+
     try {
       settings = await invoke('get_default_settings');
       Object.entries(settings.values).forEach(([key, value]) => {
@@ -408,41 +408,49 @@ const setupEventListeners = () => {
       button.disabled = false;
     }
   };
-  
+
   // Apply button
   $('#apply-btn').onclick = async () => {
     const button = $('#apply-btn');
     button.disabled = true;
     button.textContent = 'Applying...';
-    
+
     try {
       const rawAccelConfig = settingsManager.getRawAccelSettings();
-      
+
       // If path is not set, prompt the user to select it
       if (!rawAccelConfig.path) {
-        alert('Please select the Raw Accel directory');
+        showErrorNotification('Please select the Raw Accel directory');
         const pathSelected = await settingsManager.handleBrowseClick();
         if (!pathSelected || !settingsManager.rawAccelPath) {
-          alert('No Raw Accel directory selected. Operation canceled.');
+          showErrorNotification('No Raw Accel directory selected. Operation canceled.');
           return;
         }
       }
-      
+
       await invoke('apply_to_raw_accel', {
         settings,
         rawAccelPath: settingsManager.rawAccelPath,
         rawAccelSettings: rawAccelConfig.settings
       });
       await settingsManager.saveSettings();
-      alert('Curve applied to Raw Accel successfully!');
+
+      // Show custom notification
+      const notification = $('#notification');
+      notification.classList.add('show');
+
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
     } catch (error) {
-      alert(`Failed to apply curve: ${error}`);
+      showErrorNotification(`Failed to apply curve: ${error}`);
     } finally {
       button.textContent = 'Apply';
       button.disabled = false;
     }
   };
-  
+
   // Window controls
   $('#titlebar-minimize').onclick = () => appWindow.minimize();
   $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();
@@ -472,6 +480,33 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// Show error notification
+const showErrorNotification = (message) => {
+  const notification = $('#notification');
+  const notificationIcon = notification.querySelector('.notification-icon');
+  const notificationMessage = notification.querySelector('.notification-message');
+
+  // Set error style and message
+  notificationIcon.className = 'notification-icon error';
+  notificationIcon.textContent = '!';
+  notificationMessage.textContent = message;
+
+  // Show notification
+  notification.classList.add('show');
+
+  // Auto-hide after 4 seconds (errors shown longer)
+  setTimeout(() => {
+    notification.classList.remove('show');
+
+    // Reset to success state after hiding
+    setTimeout(() => {
+      notificationIcon.className = 'notification-icon success';
+      notificationIcon.textContent = '✓';
+      notificationMessage.textContent = 'Curve applied to Raw Accel successfully!';
+    }, 500);
+  }, 4000);
+};
+
 // Add validation bubble suppression styles
 document.head.appendChild(Object.assign(document.createElement('style'), {
   textContent: `
@@ -499,17 +534,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyWebView2Optimizations();
   await loadDefaultConfigurations();
   settingsManager = new SettingsManager();
-  
+
   if (!(await settingsManager.loadSavedSettings())) {
     await initializeSettings();
   }
-  
+
   // Set initial active tab
   $('.tab-button[data-tab="raw-accel"]').classList.add('active');
   $('#raw-accel-tab').classList.add('active');
   $('.tab-button[data-tab="curve"]').classList.remove('active');
   $('#curve-tab').classList.remove('active');
-  
+
   // Remove tooltips from specific inputs
   ['min_sens-value', 'max_sens-value', 'sens_multiplier-value', 'y_x_ratio-value', 'growth_base-value']
     .forEach(id => {
@@ -523,10 +558,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.addEventListener('invalid', e => e.preventDefault());
       }
     });
-  
+
   setupEventListeners();
   updatePlotThrottled();
-  
+
   // Handle tab indicator positioning on resize
   const updateTabOnResize = () => {
     const activeTab = $('.tab-button.active');
@@ -538,10 +573,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   };
-  
+
   window.addEventListener('load', updateTabOnResize);
   window.addEventListener('resize', updateTabOnResize);
-  
+
   // Handle splash screen animation
   const splashScreen = $('#splash-screen');
   if (splashScreen) {
