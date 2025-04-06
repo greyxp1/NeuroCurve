@@ -5,11 +5,11 @@ use serde_json::{json, to_string_pretty, from_str};
 
 const INPUT_RANGE: usize = 257;
 
-pub const DEFAULT_MIN_SENS: f64 = 1.0;
+pub const DEFAULT_MIN_SENS: f64 = 0.6;
 pub const DEFAULT_MAX_SENS: f64 = 7.0;
 pub const DEFAULT_RANGE: f64 = 40.0;
 pub const DEFAULT_GROWTH_BASE: f64 = 1.05;
-pub const DEFAULT_OFFSET: f64 = 1.0;
+pub const DEFAULT_OFFSET: f64 = 0.0;
 pub const DEFAULT_DPI: f64 = 1600.0;
 pub const DEFAULT_POLLING_RATE: f64 = 4000.0;
 pub const DEFAULT_SENS_MULTIPLIER: f64 = 1.0;
