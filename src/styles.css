@@ -1,12 +1,12 @@
 :root {
-  --window-radius:12px;
+  --window-radius:0px;
   --bg-primary:rgba(10,10,10,.5);
   --text-primary:#e1e1e1;
   --text-secondary:#fff;
   --primary:#4d9fff;
   --error:#ff4d4d;
   --border:#2a2a2a;
-  --corner-radius:12px;
+  --corner-radius:10px;
   --button-height:40px;
   --panel-bg:rgba(18,18,18,.7);
   --panel-border:rgba(255,255,255,.05);
