@@ -53,9 +53,6 @@ impl Default for DefaultSettings {
             ("curve", "offset", "Offset", 0.0, 50.0, 1.0, DEFAULT_OFFSET),
             ("curve", "range", "Accel Range", 10.0, 200.0, 1.0, DEFAULT_RANGE),
             ("curve", "growth_base", "Accel Rate", 1.0, 1.5, 0.001, DEFAULT_GROWTH_BASE),
-            ("raw", "dpi", "DPI", 0.0, 64000.0, 1.0, DEFAULT_DPI),
-            ("raw", "polling_rate", "Polling Rate", 0.0, 8000.0, 125.0, DEFAULT_POLLING_RATE),
-            ("raw", "sens_multiplier", "Sens Multiplier", 0.01, 10.0, 0.01, DEFAULT_SENS_MULTIPLIER),
             ("raw", "y_x_ratio", "Y/X Ratio", 0.01, 10.0, 0.01, DEFAULT_Y_X_RATIO),
             ("raw", "rotation", "Rotation", -180.0, 180.0, 1.0, DEFAULT_ROTATION),
             ("raw", "angle_snapping", "Angle Snap", 0.0, 45.0, 1.0, DEFAULT_ANGLE_SNAPPING),
@@ -140,7 +137,6 @@ fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RawAccelSettings {
-    pub dpi: f64, pub polling_rate: f64, pub sens_multiplier: f64,
     pub y_x_ratio: f64, pub rotation: f64, pub angle_snapping: f64,
 }
 
@@ -154,9 +150,6 @@ impl Default for AppSettings {
         AppSettings {
             curve_settings: Settings::default(),
             raw_accel_settings: RawAccelSettings {
-                dpi: DEFAULT_DPI,
-                polling_rate: DEFAULT_POLLING_RATE,
-                sens_multiplier: DEFAULT_SENS_MULTIPLIER,
                 y_x_ratio: DEFAULT_Y_X_RATIO,
                 rotation: DEFAULT_ROTATION,
                 angle_snapping: DEFAULT_ANGLE_SNAPPING,
@@ -185,8 +178,8 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings
         "version": "1.6.1",
         "defaultDeviceConfig": {
             "disable": false,
-            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": rawAccelSettings.dpi as i64,
-            "Polling rate Hz (keep at 0 for automatic adjustment)": rawAccelSettings.polling_rate as i64
+            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 1000,
+            "Polling rate Hz (keep at 0 for automatic adjustment)": 0
         },
         "profiles": [{
             "name": "NeuroCurve",
@@ -206,7 +199,7 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings
             "Vertical accel parameters": {
                 "mode": "noaccel", "Gain / Velocity": true, "data": []
             },
-            "Sensitivity multiplier": rawAccelSettings.sens_multiplier,
+            "Sensitivity multiplier": 1.0,
             "Y/X sensitivity ratio (vertical sens multiplier)": rawAccelSettings.y_x_ratio,
             "L/R sensitivity ratio (left sens multiplier)": 1.0,
             "U/D sensitivity ratio (up sens multiplier)": 1.0,

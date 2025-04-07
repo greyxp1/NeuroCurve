@@ -540,10 +540,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Set initial active tab
-  $('.tab-button[data-tab="raw-accel"]').classList.add('active');
-  $('#raw-accel-tab').classList.add('active');
-  $('.tab-button[data-tab="curve"]').classList.remove('active');
-  $('#curve-tab').classList.remove('active');
+  $('.tab-button[data-tab="curve"]').classList.add('active');
+  $('#curve-tab').classList.add('active');
+  $('.tab-button[data-tab="raw-accel"]').classList.remove('active');
+  $('#raw-accel-tab').classList.remove('active');
 
   // Remove tooltips from specific inputs
   ['min_sens-value', 'max_sens-value', 'sens_multiplier-value', 'y_x_ratio-value', 'growth_base-value']
