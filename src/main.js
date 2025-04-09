@@ -673,7 +673,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   window.addEventListener('load', updateTabOnResize);
-  window.addEventListener('resize', updateTabOnResize);
 
   // Handle splash screen animation
   const splashScreen = $('#splash-screen');
