@@ -816,3 +816,37 @@ body {
   letter-spacing:.2px;
   text-shadow:0 1px 2px rgba(0,0,0,.2);
 }
+
+/* Disable browser autocomplete and autofill styling */
+input {
+  background-image: none !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgba(30, 30, 30, 0.8) inset !important;
+  -webkit-text-fill-color: var(--text-color) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Hide browser autocomplete UI elements */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-strong-password-auto-fill-button,
+input::-webkit-caps-lock-indicator,
+input::-webkit-credit-card-auto-fill-button,
+input::-webkit-inner-spin-button,
+input::-webkit-calendar-picker-indicator,
+input::-webkit-clear-button,
+input::-webkit-search-cancel-button {
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+}

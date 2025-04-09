@@ -40,24 +40,26 @@
             <button class="tab-button" data-tab="raw-accel">Raw Accel</button>
           </div>
           <div class="settings-container">
-            <div class="tab-content active" id="curve-tab">
-              <div class="settings-section">
-                <div id="curve-settings">
+            <form autocomplete="off" onsubmit="return false;">
+              <div class="tab-content active" id="curve-tab">
+                <div class="settings-section">
+                  <div id="curve-settings">
 
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="tab-content" id="raw-accel-tab">
-              <div class="settings-section">
-                <div id="raw-accel-settings">
+              <div class="tab-content" id="raw-accel-tab">
+                <div class="settings-section">
+                  <div id="raw-accel-settings">
 
+                  </div>
                 </div>
               </div>
-            </div>
+            </form>
             <template id="setting-row-template">
               <div class="setting-row">
                 <label class="setting-label"></label>
-                <input type="text" inputmode="decimal" class="setting-value" novalidate>
+                <input type="text" inputmode="decimal" class="setting-value" novalidate autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
               </div>
             </template>
           </div>

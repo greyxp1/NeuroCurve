@@ -94,50 +94,62 @@ fn generate_sensitivity_curve(n: usize, growth_base: f64, range: f64, min_sens: 
     let sens_diff = max_sens - min_sens;
     let inv_range = 1.0 / range;
 
-    result.reserve(expo_len);
     if growth_base <= 1.0 {
         for i in 0..expo_len {
             let t = (i as f64 * inv_range).min(1.0);
-            let t2 = t * t;
-            result.push(min_sens + sens_diff * (t2 * (3.0 - 2.0 * t)));
+            result.push(min_sens + sens_diff * (t * t * (3.0 - 2.0 * t)));
         }
     } else {
         let base_factor = 1.0 / (growth_base.powf(range) - 1.0);
         for i in 0..expo_len {
-            let t = ((growth_base.powf(i as f64 * inv_range * range) - 1.0) * base_factor).min(1.0);
-            result.push(min_sens + sens_diff * t);
+            result.push(min_sens + sens_diff * ((growth_base.powf(i as f64 * inv_range * range) - 1.0) * base_factor).min(1.0));
         }
     }
 
-    if plateau && remaining > expo_len {
-        result.resize(n, max_sens);
-    }
-
+    if plateau && remaining > expo_len { result.resize(n, max_sens); }
     result
 }
 
 #[tauri::command]
 fn calculate_curve(settings: Settings) -> Vec<(f64, f64)> {
     let get = |k: &str| settings.values.get(k).copied().unwrap_or_else(|| match k {
-        "min_sens" => DEFAULT_MIN_SENS,
-        "max_sens" => DEFAULT_MAX_SENS,
-        "range" => DEFAULT_RANGE,
-        "growth_base" => DEFAULT_GROWTH_BASE,
-        "offset" => DEFAULT_OFFSET,
-        _ => 0.0
+        "min_sens" => DEFAULT_MIN_SENS, "max_sens" => DEFAULT_MAX_SENS, "range" => DEFAULT_RANGE,
+        "growth_base" => DEFAULT_GROWTH_BASE, "offset" => DEFAULT_OFFSET, _ => 0.0
     });
 
-    let [range, offset, min_sens, max_sens, growth_base] =
-        ["range", "offset", "min_sens", "max_sens", "growth_base"].map(get);
-
+    let [range, offset, min_sens, max_sens, growth_base] = ["range", "offset", "min_sens", "max_sens", "growth_base"].map(get);
     let limit = ((range + offset + 10.0).ceil() as usize).min(INPUT_RANGE);
     let curve = generate_sensitivity_curve(limit, growth_base, range, min_sens, max_sens, offset, true);
     (0..limit).map(|i| (i as f64, curve[i])).collect()
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ChartData {
+    pub points: Vec<(f64, f64)>,
+    pub max_y: f64,
+    pub max_x: f64,
+    pub y_values: Vec<f64>,
+    pub x_values: Vec<f64>,
+}
+
+#[tauri::command]
+fn prepare_chart_data(settings: Settings) -> Result<ChartData, String> {
+    let points = calculate_curve(settings);
+    if points.is_empty() { return Err("Failed to calculate curve points".to_string()); }
+
+    Ok(ChartData {
+        max_y: points.iter().map(|(_, y)| *y).fold(0.0, f64::max) + 0.5,
+        max_x: points.iter().map(|(x, _)| *x).fold(0.0, f64::max),
+        y_values: points.iter().map(|(_, y)| *y).collect(),
+        x_values: points.iter().map(|(x, _)| *x).collect(),
+        points,
+    })
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RawAccelSettings {
     pub y_x_ratio: f64, pub rotation: f64, pub angle_snapping: f64,
+    pub dpi: f64, pub polling_rate: f64, pub sens_multiplier: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -150,9 +162,8 @@ impl Default for AppSettings {
         AppSettings {
             curve_settings: Settings::default(),
             raw_accel_settings: RawAccelSettings {
-                y_x_ratio: DEFAULT_Y_X_RATIO,
-                rotation: DEFAULT_ROTATION,
-                angle_snapping: DEFAULT_ANGLE_SNAPPING,
+                y_x_ratio: DEFAULT_Y_X_RATIO, rotation: DEFAULT_ROTATION, angle_snapping: DEFAULT_ANGLE_SNAPPING,
+                dpi: DEFAULT_DPI, polling_rate: DEFAULT_POLLING_RATE, sens_multiplier: DEFAULT_SENS_MULTIPLIER,
             },
             raw_accel_path: String::new(),
         }
@@ -165,54 +176,37 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings
     if rawAccelPath.is_empty() { return Err("Raw Accel path is empty".to_string()); }
 
     let points = calculate_curve(settings);
-    let formatted_points: Vec<f64> = points.iter()
-        .skip(1).flat_map(|(x, y)| [*x, *y]).collect();
+    let formatted_points: Vec<f64> = points.iter().skip(1).flat_map(|(x, y)| [*x, *y]).collect();
 
     let settings_path = Path::new(&rawAccelPath).join("settings.json");
     let writer_path = Path::new(&rawAccelPath).join("writer.exe");
-    if !writer_path.exists() {
-        return Err(format!("Writer executable not found at: {}", writer_path.display()));
-    }
+    if !writer_path.exists() { return Err(format!("Writer not found: {}", writer_path.display())); }
 
     let raw_accel_json = json!({
         "version": "1.6.1",
-        "defaultDeviceConfig": {
-            "disable": false,
-            "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 1000,
-            "Polling rate Hz (keep at 0 for automatic adjustment)": 0
-        },
+        "defaultDeviceConfig": { "disable": false, "DPI (normalizes sens to 1000dpi and converts input speed unit: counts/ms -> in/s)": 1000, "Polling rate Hz (keep at 0 for automatic adjustment)": 0 },
         "profiles": [{
-            "name": "NeuroCurve",
-            "Whole/combined accel (set false for 'by component' mode)": true,
-            "lpNorm": 2.0,
+            "name": "NeuroCurve", "Whole/combined accel (set false for 'by component' mode)": true, "lpNorm": 2.0,
             "Stretches domain for horizontal vs vertical inputs": {"x": 1.0, "y": 1.0},
             "Stretches accel range for horizontal vs vertical inputs": {"x": 1.0, "y": 1.0},
             "Whole or horizontal accel parameters": {
-                "mode": "lut", "Gain / Velocity": false,
-                "inputOffset": 0.0, "outputOffset": 0.0,
-                "acceleration": 0.005, "decayRate": 0.1, "growthRate": 1.0,
-                "motivity": 1.5, "exponentClassic": 2.0, "scale": 1.0,
-                "exponentPower": 0.05, "limit": 1.5, "midpoint": 5.0, "smooth": 0.5,
-                "Cap / Jump": {"x": 15.0, "y": 1.5}, "Cap mode": "output",
-                "data": formatted_points
+                "mode": "lut", "Gain / Velocity": false, "inputOffset": 0.0, "outputOffset": 0.0,
+                "acceleration": 0.005, "decayRate": 0.1, "growthRate": 1.0, "motivity": 1.5,
+                "exponentClassic": 2.0, "scale": 1.0, "exponentPower": 0.05, "limit": 1.5,
+                "midpoint": 5.0, "smooth": 0.5, "Cap / Jump": {"x": 15.0, "y": 1.5},
+                "Cap mode": "output", "data": formatted_points
             },
-            "Vertical accel parameters": {
-                "mode": "noaccel", "Gain / Velocity": true, "data": []
-            },
-            "Sensitivity multiplier": 1.0,
-            "Y/X sensitivity ratio (vertical sens multiplier)": rawAccelSettings.y_x_ratio,
-            "L/R sensitivity ratio (left sens multiplier)": 1.0,
-            "U/D sensitivity ratio (up sens multiplier)": 1.0,
-            "Degrees of rotation": rawAccelSettings.rotation,
-            "Degrees of angle snapping": rawAccelSettings.angle_snapping,
+            "Vertical accel parameters": { "mode": "noaccel", "Gain / Velocity": true, "data": [] },
+            "Sensitivity multiplier": 1.0, "Y/X sensitivity ratio (vertical sens multiplier)": rawAccelSettings.y_x_ratio,
+            "L/R sensitivity ratio (left sens multiplier)": 1.0, "U/D sensitivity ratio (up sens multiplier)": 1.0,
+            "Degrees of rotation": rawAccelSettings.rotation, "Degrees of angle snapping": rawAccelSettings.angle_snapping,
             "Input Speed Cap": 0.0
         }],
         "devices": []
     });
 
-    fs::write(&settings_path, to_string_pretty(&raw_accel_json)
-        .map_err(|e| format!("Failed to serialize JSON: {}", e))?)
-        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+    fs::write(&settings_path, to_string_pretty(&raw_accel_json).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?;
 
     Command::new(writer_path).arg("settings.json").current_dir(rawAccelPath)
         .spawn().map_err(|e| format!("Failed to execute Raw Accel writer: {}", e))?;
@@ -223,29 +217,48 @@ fn apply_to_raw_accel(settings: Settings, rawAccelPath: String, rawAccelSettings
 #[tauri::command]
 fn save_app_settings(app_settings: AppSettings, app_handle: tauri::AppHandle) -> Result<(), String> {
     let app_dir = app_handle.path().app_config_dir()
-        .map_err(|e| format!("Failed to get app config directory: {}", e))?;
-    fs::create_dir_all(&app_dir)
-        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+        .map_err(|e| format!("Config dir error: {}", e))?;
+    fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
 
-    let settings_path = app_dir.join("settings.json");
-    fs::write(&settings_path, to_string_pretty(&app_settings)
-        .map_err(|e| format!("Failed to serialize settings: {}", e))?)
-        .map_err(|e| format!("Failed to write settings file: {}", e))?;
-
-    Ok(())
+    fs::write(app_dir.join("settings.json"),
+              to_string_pretty(&app_settings).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn load_app_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, String> {
     let settings_path = app_handle.path().app_config_dir()
-        .map_err(|e| format!("Failed to get app config directory: {}", e))?
-        .join("settings.json");
+        .map_err(|e| e.to_string())?.join("settings.json");
 
     if !settings_path.exists() { return Ok(AppSettings::default()); }
 
-    from_str(&fs::read_to_string(&settings_path)
-        .map_err(|e| format!("Failed to read settings file: {}", e))?)
-        .map_err(|e| format!("Failed to parse settings file: {}", e))
+    from_str(&fs::read_to_string(&settings_path).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn format_number(value: f64) -> String {
+    if value.fract() == 0.0 { return value.to_string(); }
+    let mut s = value.to_string();
+    while s.ends_with('0') { s.pop(); }
+    if s.ends_with('.') { s.pop(); }
+    s
+}
+
+#[tauri::command]
+fn reset_settings() -> Settings { Settings::default() }
+
+#[tauri::command]
+fn reset_raw_accel_settings() -> RawAccelSettings {
+    RawAccelSettings {
+        y_x_ratio: DEFAULT_Y_X_RATIO, rotation: DEFAULT_ROTATION, angle_snapping: DEFAULT_ANGLE_SNAPPING,
+        dpi: DEFAULT_DPI, polling_rate: DEFAULT_POLLING_RATE, sens_multiplier: DEFAULT_SENS_MULTIPLIER,
+    }
+}
+
+#[tauri::command]
+fn update_setting_value(_setting_type: String, _key: String, value: f64, min: f64, max: f64) -> f64 {
+    value.max(min).min(max)
 }
 
 pub fn run() {
@@ -253,12 +266,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(|_app| {
-            Ok(())
-        })
+        .setup(|_| Ok(()))
         .invoke_handler(tauri::generate_handler![
             get_default_settings, get_all_default_settings, calculate_curve,
-            apply_to_raw_accel, save_app_settings, load_app_settings
+            apply_to_raw_accel, save_app_settings, load_app_settings,
+            format_number, reset_settings, update_setting_value, prepare_chart_data,
+            reset_raw_accel_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
