@@ -253,14 +253,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(|app| {
-            #[cfg(target_os = "windows")]
-            if let Some(window) = app.get_webview_window("main") {
-                window_vibrancy::apply_acrylic(&window, Some((10, 10, 10, 80)))?;
-                window.set_decorations(false)?;
-                window.set_theme(Some(tauri::Theme::Dark))?;
-                window.set_shadow(true)?;
-            }
+        .setup(|_app| {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
