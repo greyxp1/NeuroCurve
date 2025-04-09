@@ -1,16 +1,16 @@
 :root {
-  --window-radius:0px;
+  --window-radius:8px;
   --bg-primary:rgba(10,10,10,.5);
   --text-primary:#e1e1e1;
   --text-secondary:#fff;
   --primary:#4d9fff;
   --error:#ff4d4d;
   --border:#2a2a2a;
-  --corner-radius:10px;
+  --corner-radius:8px;
   --button-height:40px;
-  --panel-bg:rgba(18,18,18,.7);
+  --panel-bg:rgba(18,18,18,.5);
   --panel-border:rgba(255,255,255,.05);
-  --blur-effect:blur(8px) saturate(105%);
+  --blur-effect:blur(12px) saturate(110%);
   --anim-fast:.2s ease;
   --anim-normal:.3s ease;
   --element-bg:rgba(255,255,255,.1);
@@ -33,7 +33,12 @@ html, body {
   background:transparent;
   height:100vh;overflow:hidden;
   border-radius:var(--window-radius);
-  clip-path:inset(0 0 0 0 round var(--window-radius));
+  box-shadow:0 10px 40px rgba(0,0,0,.4);
+}
+
+.rounded-window {
+  border-radius:var(--window-radius) !important;
+  overflow:hidden !important;
 }
 
 body {
@@ -47,15 +52,16 @@ body {
 #splash-screen {
   position:fixed;top:0;left:0;
   width:100%;height:100%;
-  background:rgba(30,30,30,.75);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
+  background:rgba(30,30,30,.65);
+  backdrop-filter:var(--blur-effect);
+  -webkit-backdrop-filter:var(--blur-effect);
   z-index:9999;
   display:flex;align-items:center;justify-content:center;
   animation:splashFadeOut .8s cubic-bezier(.4,0,.2,1) 2.5s forwards;
   border-radius:var(--window-radius);
   overflow:hidden;
   will-change:opacity,visibility;
+  clip-path:inset(0 0 0 0 round var(--window-radius));
 }
 
 .splash-content {
@@ -142,7 +148,11 @@ body {
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
   border-radius:var(--window-radius);
-  background:transparent;
+  background:rgba(15,15,20,.4);
+  backdrop-filter:var(--blur-effect);
+  -webkit-backdrop-filter:var(--blur-effect);
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+  position:relative;
 }
 
 .main-content {
@@ -152,6 +162,7 @@ body {
   overflow:hidden;position:relative;
   border-radius:var(--window-radius);
   background:transparent;
+  z-index:1;
 }
 
 /* Panels */
@@ -168,7 +179,8 @@ body {
   border:1px solid var(--panel-border);
   will-change:transform;
   transform:translate3d(0,0,0);
-  box-shadow:0 4px 20px rgba(0,0,0,.15);
+  box-shadow:0 8px 30px rgba(0,0,0,.2);
+  z-index:2;
 }
 
 .plot-panel {
@@ -176,9 +188,8 @@ body {
   min-width:500px;
   position:relative;
   padding:16px;
-  box-shadow:0 8px 24px rgba(0,0,0,.25),0 0 1px rgba(255,255,255,.1);
+  box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 1px rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.1);
-  backdrop-filter:blur(10px);
 }
 
 .settings-panel {
@@ -187,9 +198,8 @@ body {
   transition:transform var(--anim-fast);
   transform-origin:left;
   padding:16px 12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 1px rgba(255,255,255,.1);
+  box-shadow:0 10px 30px rgba(0,0,0,.3),0 0 1px rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.1);
-  backdrop-filter:blur(10px);
 }
 
 /* App Branding */
@@ -206,7 +216,7 @@ body {
   gap:8px;
   background:rgba(255,255,255,.05);
   padding:6px 12px;
-  border-radius:20px;
+  border-radius:var(--corner-radius);
   box-shadow:0 2px 8px rgba(0,0,0,.1);
   border:1px solid rgba(255,255,255,.1);
 }
@@ -307,7 +317,7 @@ body {
 .settings-container::-webkit-scrollbar-track {background:transparent}
 .settings-container::-webkit-scrollbar-thumb {
   background-color:rgba(255,255,255,.2);
-  border-radius:4px;
+  border-radius:var(--corner-radius);
 }
 
 /* Settings Toggle */
@@ -353,7 +363,7 @@ body {
   display:flex;
   width:100%;
   margin:8px 0 20px 0;
-  border-radius:10px;
+  border-radius:var(--corner-radius);
   background:rgba(0,0,0,.2);
   position:relative;
   padding:8px;
@@ -367,7 +377,7 @@ body {
   height:36px;
   top:50%;left:0;
   background:linear-gradient(45deg,rgba(77,159,255,.4) 0%,rgba(110,180,255,.5) 50%,rgba(77,159,255,.4) 100%);
-  border-radius:12px;
+  border-radius:var(--corner-radius);
   z-index:0;
   transition:transform .3s cubic-bezier(.34,1.56,.64,1),width .3s cubic-bezier(.34,1.56,.64,1);
   box-shadow:0 0 20px rgba(77,159,255,.45),inset 0 1px 3px rgba(255,255,255,.2);
@@ -427,7 +437,7 @@ body {
   padding:0 16px;
   overflow:visible;
   transition:all .2s ease;
-  border-radius:6px;
+  border-radius:var(--corner-radius);
 }
 
 .setting-row:hover {background:rgba(255,255,255,.03)}
@@ -542,7 +552,7 @@ body {
   flex:none;
   position:relative;
   overflow:hidden;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
   text-shadow:0 1px 2px rgba(0,0,0,.2);
 }
 
@@ -602,7 +612,7 @@ body {
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:10px;
+  border-radius:var(--corner-radius);
   overflow:hidden;
   background:transparent;
   box-shadow:none;
@@ -746,13 +756,13 @@ body {
   position:fixed;
   bottom:30px;left:50%;
   transform:translateX(-50%) translateY(100px);
-  background:rgba(18,18,18,.9);
+  background:rgba(18,18,18,.7);
   border:1px solid rgba(255,255,255,.1);
   border-radius:var(--corner-radius);
   padding:0;
   min-width:300px;
   max-width:90%;
-  box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 1px rgba(255,255,255,.1);
+  box-shadow:0 10px 30px rgba(0,0,0,.3),0 0 1px rgba(255,255,255,.1);
   backdrop-filter:var(--blur-effect);
   -webkit-backdrop-filter:var(--blur-effect);
   z-index:9000;
@@ -788,7 +798,7 @@ body {
 
 .notification-icon {
   width:24px;height:24px;
-  border-radius:50%;
+  border-radius:var(--corner-radius);
   display:flex;align-items:center;justify-content:center;
   margin-right:12px;
   color:#fff;

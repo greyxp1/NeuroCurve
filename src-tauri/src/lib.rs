@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, sync::OnceLock, fs, path::Path, process::Command};
 use tauri::Manager;
 use serde_json::{json, to_string_pretty, from_str};
+use window_vibrancy::apply_acrylic;
 
 const INPUT_RANGE: usize = 257;
 
@@ -253,7 +254,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(|_app| {
+        .setup(|app| {
+            let window = app.get_webview_window("main").expect("Failed to get main window");
+
+            #[cfg(target_os = "windows")]
+            {
+                apply_acrylic(&window, Some((18, 18, 18, 200)))
+                    .expect("Failed to apply acrylic effect");
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

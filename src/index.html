@@ -8,8 +8,8 @@
     <script type="module" src="/main.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-  <body>
-    <div id="splash-screen">
+  <body class="rounded-window">
+    <div id="splash-screen" class="rounded-window">
       <div class="splash-content">
         <div class="splash-animation-container">
           <div class="splash-logo-title-group">
@@ -30,8 +30,8 @@
         </div>
       </div>
     </div>
-    <div class="container" data-tauri-drag-region>
-      <div class="main-content hardware-accelerated">
+    <div class="container rounded-window" data-tauri-drag-region>
+      <div class="main-content hardware-accelerated rounded-window">
         <div class="settings-panel hardware-accelerated">
           <div class="panel-header"><h2>Settings</h2></div>
           <div class="tab-navigation">
@@ -86,7 +86,7 @@
         </div>
       </div>
     </div>
-    <div id="notification" class="notification">
+    <div id="notification" class="notification rounded-window">
       <div class="notification-content">
         <div class="notification-icon success">✓</div>
         <div class="notification-message">Curve applied to Raw Accel successfully!</div>

@@ -18,9 +18,10 @@
         "resizable": true,
         "decorations": false,
         "transparent": true,
-        "shadow": false,
-        "center": true,
+        "shadow": true,
+        "skipTaskbar": false,
         "theme": "Dark",
+        "center": true,
         "hiddenTitle": true
       }
     ],

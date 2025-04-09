@@ -1,5 +1,16 @@
 const {invoke} = window.__TAURI__.core, {getCurrentWindow} = window.__TAURI__.window,
       appWindow = getCurrentWindow(), $ = s => document.querySelector(s), Chart = window.Chart;
+
+// Apply rounded corners to the window
+const applyRoundedCorners = () => {
+  try {
+    // Add a subtle border to help with rounded corners visibility
+    document.documentElement.style.setProperty('--window-radius', '8px');
+    document.documentElement.style.setProperty('--corner-radius', '8px');
+  } catch (e) {
+    console.error('Failed to apply rounded corners:', e);
+  }
+};
 // Throttle function - limits execution to once per specified interval
 const throttle = (f, l) => {let i; return function() {if (!i) {f.apply(this, arguments); i = setTimeout(() => i = false, l)}}};
 // Debounce function - waits until input stops before executing
@@ -677,3 +688,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 document.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('beforeunload', cleanupChart);
+
+// Apply rounded corners once at startup
+applyRoundedCorners();
