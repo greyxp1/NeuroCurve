@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::Exposure, time::{Stopwatch, Timer, TimerMode}, window::CursorGrabMode};
+use bevy::{prelude::*, render::camera::Exposure, time::{Stopwatch, Timer, TimerMode}, window::{CursorGrabMode, MonitorSelection, WindowPosition}, app::AppExit};
 use bevy_diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_fps_controller::controller::*;
 use bevy_rapier3d::prelude::*;
@@ -140,6 +140,10 @@ pub fn main() {
             primary_window: Some(Window {
                 title: String::from("Aim Trainer"),
                 present_mode: bevy::window::PresentMode::Immediate,
+                mode: bevy::window::WindowMode::Windowed,
+                resolution: (1920.0, 1080.0).into(),
+                position: WindowPosition::Centered(MonitorSelection::Primary),
+                decorations: false,
                 ..default()
             }),
             ..default()
@@ -154,11 +158,20 @@ pub fn main() {
             update_displays,
             manage_scenarios,
             update_target_movements,
+            handle_exit_key,
         ))
         .run();
 }
 
-
+// Handle exit key (Escape)
+fn handle_exit_key(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut app_exit_events: EventWriter<AppExit>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        app_exit_events.send(AppExit::Success);
+    }
+}
 
 // Setup player and camera
 fn fps_controller_setup(mut commands: Commands) {
