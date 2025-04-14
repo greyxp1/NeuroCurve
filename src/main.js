@@ -487,6 +487,34 @@ const setupEventListeners = () => {
     }
   };
 
+  // Calibrate button
+  $('#calibrate-btn').onclick = async () => {
+    const button = $('#calibrate-btn');
+    button.disabled = true;
+    button.textContent = 'Calibrating...';
+
+    try {
+      // Launch the calibration module
+      await invoke('launch_calibration');
+
+      // Show custom notification
+      const notification = $('#notification');
+      notification.classList.add('show');
+      notification.querySelector('.notification-message').textContent = 'Aim trainer launched!';
+
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    } catch (error) {
+      console.error('Calibration failed:', error);
+      showErrorNotification(`Failed to launch calibration: ${error}`);
+    } finally {
+      button.textContent = 'Calibrate';
+      button.disabled = false;
+    }
+  };
+
   // Window controls
   $('#titlebar-minimize').onclick = () => appWindow.minimize();
   $('#titlebar-maximize').onclick = () => appWindow.toggleMaximize();

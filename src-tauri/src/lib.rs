@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, sync::OnceLock, fs, path::Path, process::Command};
+pub mod cailbration;
 use tauri::Manager;
 use serde_json::{json, to_string_pretty, from_str};
 use window_vibrancy::apply_acrylic;
@@ -249,6 +250,15 @@ fn load_app_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, String
         .map_err(|e| format!("Failed to parse settings file: {}", e))
 }
 
+#[tauri::command]
+fn launch_calibration() -> Result<(), String> {
+    // Run the calibration module directly in the main thread
+    // This will block the main thread until the calibration is complete
+    cailbration::main();
+
+    Ok(())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -267,7 +277,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_default_settings, get_all_default_settings, calculate_curve,
-            apply_to_raw_accel, save_app_settings, load_app_settings
+            apply_to_raw_accel, save_app_settings, load_app_settings,
+            launch_calibration
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

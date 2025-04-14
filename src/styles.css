@@ -523,9 +523,9 @@ body {
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:20px;
+  gap:8px;
   width:100%;
-  padding:20px 0 16px;
+  padding:16px 0 14px;
   position:relative;
   background:linear-gradient(to bottom,transparent,rgba(0,0,0,.1));
 }
@@ -539,12 +539,12 @@ body {
   animation:glow 16s ease infinite;
 }
 
-#reset-btn, #apply-btn {
-  width:90px;
-  height:36px;
+#reset-btn, #calibrate-btn, #apply-btn {
+  width:70px;
+  height:30px;
   border:0;
-  border-radius:var(--corner-radius);
-  font:600 14px sans-serif;
+  border-radius:6px;
+  font:600 12px sans-serif;
   color:var(--text-secondary);
   cursor:pointer;
   transition:all .3s cubic-bezier(.2,0,.1,1);
@@ -552,7 +552,7 @@ body {
   flex:none;
   position:relative;
   overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,.2);
+  box-shadow:0 3px 8px rgba(0,0,0,.2);
   text-shadow:0 1px 2px rgba(0,0,0,.2);
 }
 
@@ -566,7 +566,12 @@ body {
   background-size:200% auto;
 }
 
-#reset-btn::after, #apply-btn::after {
+#calibrate-btn {
+  background:linear-gradient(45deg,#e6b800 0%,#ffdb4d 50%,#e6b800 100%);
+  background-size:200% auto;
+}
+
+#reset-btn::after, #calibrate-btn::after, #apply-btn::after {
   content:'';
   position:absolute;
   top:0;left:-100%;
@@ -575,27 +580,28 @@ body {
   pointer-events:none;
 }
 
-#reset-btn:hover, #apply-btn:hover {
+#reset-btn:hover, #calibrate-btn:hover, #apply-btn:hover {
   transform:translateY(-2px);
   filter:brightness(1.1);
   background-position:right center;
   animation:btnGlow 3s ease infinite;
 }
 
-#reset-btn:hover {box-shadow:0 6px 15px -2px rgba(255,77,77,.4)}
-#apply-btn:hover {box-shadow:0 6px 15px -2px rgba(40,201,64,.4)}
+#reset-btn:hover {box-shadow:0 4px 10px -2px rgba(255,77,77,.4)}
+#calibrate-btn:hover {box-shadow:0 4px 10px -2px rgba(230,184,0,.4)}
+#apply-btn:hover {box-shadow:0 4px 10px -2px rgba(40,201,64,.4)}
 
-#reset-btn:hover::after, #apply-btn:hover::after {
+#reset-btn:hover::after, #calibrate-btn:hover::after, #apply-btn:hover::after {
   animation:buttonShine 1.2s ease-in-out;
 }
 
-#reset-btn:active, #apply-btn:active {
+#reset-btn:active, #calibrate-btn:active, #apply-btn:active {
   transform:translateY(1px);
   filter:brightness(.95);
   box-shadow:0 2px 4px rgba(0,0,0,.3);
 }
 
-#reset-btn:disabled, #apply-btn:disabled {
+#reset-btn:disabled, #calibrate-btn:disabled, #apply-btn:disabled {
   opacity:.6;
   cursor:not-allowed;
   transform:none;
